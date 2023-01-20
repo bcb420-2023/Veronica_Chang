@@ -1,0 +1,43 @@
+---
+title: "BCB420 Homework 1: Docker"
+author: "Veronica Chang"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Task 1: Create a 5 by 10 matrix of random integers.
+```{r}
+set.seed(387492)
+# Generate 50 random integers.
+randomIntegers <- sample.int(50, replace = TRUE)
+randomMatrix <- matrix(randomIntegers, nrow = 5, ncol = 10)
+set.seed(NULL)
+randomMatrix
+```
+
+# Task 2: Define column names as cond1, cond2, cond3, cond4, cond5, ctrl1, ctrl2, ctrl3, ctrl4, ctrl5.
+```{r}
+colnames(randomMatrix) <- c("cond1", "cond2", "cond3", "cond4", "cond5",
+                            "ctrl1", "ctrl2", "ctrl3", "ctrl4", "ctrl5")
+randomMatrix
+```
+# Task 3: Define row names as gene1, gene2, gene3 ...
+```{r}
+rownames(randomMatrix) <- c("gene1", "gene2", "gene3", "gene4", "gene5")
+randomMatrix
+```
+# Task 4: Compute the fold change for each gene.
+```{r}
+# Store results in a vector named "log2FC".
+log2FC <- numeric(nrow(randomMatrix))
+names(log2FC) <- c("gene1", "gene2", "gene3", "gene4", "gene5")
+
+# For loop to get FC for each gene in the matrix.
+for (i in seq_len(nrow(randomMatrix))) {
+    log2FC[i] <- log2(mean(randomMatrix[i, 1:5]) / 
+                                  mean(randomMatrix[i, 6:10]))
+}
+log2FC
+``` 
