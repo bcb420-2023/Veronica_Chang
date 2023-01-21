@@ -31,13 +31,6 @@ randomMatrix
 # Task 4: Compute the fold change for each gene.
 ```{r}
 # Store results in a vector named "log2FC".
-log2FC <- numeric(nrow(randomMatrix))
-names(log2FC) <- c("gene1", "gene2", "gene3", "gene4", "gene5")
-
-# For loop to get FC for each gene in the matrix.
-for (i in seq_len(nrow(randomMatrix))) {
-    log2FC[i] <- log2(mean(randomMatrix[i, 1:5]) / 
-                                  mean(randomMatrix[i, 6:10]))
-}
+log2FC <- log2(rowMeans(randomMatrix[, 1:5]) / rowMeans(randomMatrix[, 6:10]))
 log2FC
 ``` 
