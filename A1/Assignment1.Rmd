@@ -1,0 +1,88 @@
+---
+title: "BCB420 Assignment 1: Data set selection and initial processing."
+author: "Veronica Chang"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output:
+  html_document:
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+# Task 1: Install packages and select an expression data set.
+
+```{r, message=FALSE, warning=FALSE}
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (!requireNamespace("GEOmetadb", quietly = TRUE))
+    BiocManager::install("GEOmetadb")
+```
+
+Prepare the database
+
+```{r, message=FALSE}
+# Check if it already exists
+if(!file.exists('GEOmetadb.sqlite')) GEOmetadb::getSQLiteFile()
+file.info('GEOmetadb.sqlite')
+
+# Connect to the database
+con <- DBI::dbConnect(RSQLite::SQLite(),'GEOmetadb.sqlite',`synchronous` = NULL)
+DBI::dbListFields(con, 'gpl')
+geoTables <- DBI::dbListTables(con)
+geoTables
+```
+
+Going to query the database.
+I am looking for series related to the human autoimmune disease, lupus or SLE.
+Therefore, the organims should contain `Homo sapiens` and the title of the series should contain one of `autoimmune`, `lupus`.
+Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
+
+```{r}
+results <- DBI::dbGetQuery(con,'select * from gpl limit 5')
+knitr::kable(head(results[,1:5]), format = "pipe")
+
+# Build the SQL query
+sql <- paste("SELECT DISTINCT gse.title, gse.gse, gpl.title,",
+             " gse.submission_date,",
+             " gse.supplementary_file",
+             "FROM",
+             "  gse JOIN gse_gpl ON gse_gpl.gse=gse.gse",
+             "  JOIN gpl ON gse_gpl.gpl=gpl.gpl",
+             "WHERE",
+             "  gpl.organism LIKE '%Homo sapiens%' AND",
+             "  gse.title LIKE '%lupus%' OR gse.title LIKE '%multiple sclerosis%' AND",
+             "  gpl.technology LIKE '%high-throughput sequencing%' AND",
+             "  gse.submission_date > '2013-01-01'",
+             "  ORDER BY gse.submission_date DESC",
+             sep=" ")
+
+# Initiate the query
+rs <- DBI::dbGetQuery(con,sql)
+knitr::kable(rs, format = "pipe")
+dim(rs)
+```
+
+# Task 2: Clean the data and map to HUGO symbols.
+
+```{r}
+
+```
+
+# Task 3: Apply Normalization.
+
+```{r}
+
+```
+
+# Task 4: Interpret, and document.
+
+What are the control and test conditions of the dataset?
+Why is the dataset of interest to you?
+Were there expression values that were not unique for specific genes?
+How did you handle these?
+Were there expression values that could not be mapped to current HUGO symbols?
+How many outliers were removed?
+How did you handle replicates?
+What is the final coverage of your dataset?
