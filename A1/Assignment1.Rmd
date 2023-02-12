@@ -18,11 +18,16 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 if (!requireNamespace("GEOmetadb", quietly = TRUE))
     BiocManager::install("GEOmetadb")
+
+library("BiocManager")
+library("GEOmetadb")
+library("limma")
+library("edgeR")
 ```
 
 Prepare the database
 
-```{r, message=FALSE}
+```{r, message=FALSE, tidy=TRUE}
 # Check if it already exists
 if(!file.exists('GEOmetadb.sqlite')) GEOmetadb::getSQLiteFile()
 file.info('GEOmetadb.sqlite')
@@ -39,7 +44,7 @@ I am looking for series related to the human autoimmune disease, lupus or SLE.
 Therefore, the organims should contain `Homo sapiens` and the title of the series should contain one of `autoimmune`, `lupus`.
 Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
 
-```{r}
+```{r, message=FALSE, tidy=TRUE}
 results <- DBI::dbGetQuery(con,'select * from gpl limit 5')
 knitr::kable(head(results[,1:5]), format = "pipe")
 
@@ -64,14 +69,62 @@ knitr::kable(rs, format = "pipe")
 dim(rs)
 ```
 
+Selected the dataset **GSE111972**, description below
+```{r, message=FALSE, tidy=TRUE}
+gseAccession <- "GSE111972"
+gse <- GEOquery::getGEO(gseAccession, GSEMatrix = FALSE)
+gpl <- names(GEOquery::GPLList(gse))[1]
+gplInfo <- GEOquery::Meta(GEOquery::getGEO(gpl))
+```
+
 # Task 2: Clean the data and map to HUGO symbols.
+Fetch the data set.
+```{r, message=FALSE, tidy=TRUE}
+gseDir <- "/home/rstudio/projects/A1"
+if (! file.exists("~/projects/A1/GSE111972/GSE111972_norm_data.txt")) {
+  sFiles = GEOquery::getGEOSuppFiles(gseAccession)
+  fName = rownames(sFiles)
+  GEOquery::gunzip(fNames[1])
+}
+```
+There is only one supplemental file for this study.
+```{r, tidy=TRUE}
+file <- list.files(path = "~/projects/A1/GSE111972/", pattern = "\\.txt")
+expData <- read.table(paste0("~/projects/A1/GSE111972/", file), sep = "\t", 
+                        header = TRUE, check.names = FALSE)
+colnames(expData)
+dim(expData)
+```
+There are 32 columns, the first being the Gene ID. There are 21283 rows (genes) in this data set.
+Defining the groups:
+```{r, tidy=TRUE}
+samples <- data.frame(lapply(colnames(expData)[2:32], 
+        FUN=function(x){unlist(strsplit(x, 
+                        split = "\\_"))[c(2,3,4)]}))
+colnames(samples) <- colnames(expData)[2:32]
+rownames(samples) <- c("patients_group","tissue","sample")
+samples <- data.frame(t(samples))
+samples
+```
 
-```{r}
+Check for gene duplicates:
+```{r, tidy=TRUE}
+length(unique(expData$ID))
+!(length(unique(expData$ID)) == dim(expData)[1]) 
+```
 
+There are no gene duplicates. Going to remove genes with low counts.
+```{r, message= FALSE, tidy=TRUE}
+cpms = cpm(expData[,2:32])
+rownames(cpms) <- expData[,1]
+
+# get rid of low counts
+keep = rowSums(cpms >1) >=10
+expDataFiltered = expData[keep,]
 ```
 
 # Task 3: Apply Normalization.
-
+Check distribution
 ```{r}
 
 ```
