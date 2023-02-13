@@ -124,9 +124,83 @@ expDataFiltered = expData[keep,]
 ```
 
 # Task 3: Apply Normalization.
-Check distribution
-```{r}
+Check statistical summaries
+```{r, message = FALSE, tidy=TRUE}
+summaryStats <- data.frame(apply(expDataFiltered[, 2:32], 2, summary))
+summaryStats
 
+# Calculate the summary statistics for each group
+
+# CON (non-neurological control) WM (white matter)
+summaryCONWM <- summary(rowMeans(expDataFiltered[, grep("Sample_CON_WM", colnames(expDataFiltered))]))
+# MS (multiple sclerosis) WM (white matter)
+summaryMSWM <- summary(rowMeans(expDataFiltered[, grep("Sample_MS_WM", colnames(expDataFiltered))]))
+# CON (non-neurological control) GM (grey matter)
+summaryCONGM <- summary(rowMeans(expDataFiltered[, grep("Sample_CON_GM", colnames(expDataFiltered))]))
+# MS (multiple sclerosis) GM (grey matter)
+summaryMSGM <- summary(rowMeans(expDataFiltered[, grep("Sample_MS_GM", colnames(expDataFiltered))]))
+
+# Combine all
+summaryStats2 <- rbind(summaryCONWM, summaryMSWM, summaryCONGM, summaryMSGM)
+rownames(summaryStats2) <- c("CON WM", "MS WM", "CON GM", "MS GM")
+knitr::kable(summaryStats2, format = "html", col.names = colnames(summaryStats2)) 
+```
+Means of the different groups are similar to each other for each tissue. This suggests that variations in gene counts can be attributed to biological variations rather than technical variations.
+
+
+Check distribution:
+```{r, message = FALSE, tidy=TRUE}
+# box plot
+data2plot <- log2(cpm(expDataFiltered[,2:32]))
+boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
+        las = 2, cex = 0.5, cex.lab = 0.5,
+        cex.axis = 0.5, main = "Grey–white matter of multiple sclerosis patients 
+        and non-neurological control donors")
+
+# draw the median on each box plot
+abline(h = median(apply(data2plot, 2, median)), 
+       col = "green", lwd = 0.6, lty = "dashed")
+
+# density plot
+counts_density <- apply(log2(cpm(expDataFiltered[,3:32])), 
+                        2, density)
+#calculate the limits across all the samples
+  xlim <- 0; ylim <- 0
+  for (i in 1:length(counts_density)) {
+    xlim <- range(c(xlim, counts_density[[i]]$x)); 
+    ylim <- range(c(ylim, counts_density[[i]]$y))
+  }
+  cols <- rainbow(length(counts_density))
+  ltys <- rep(1, length(counts_density))
+#plot the first density plot to initialize the plot
+plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n", 
+     ylab="Smoothing density of log2-CPM", 
+     main="", cex.lab = 0.85)
+#plot each line
+for (i in 1:length(counts_density)) 
+  lines(counts_density[[i]], col=cols[i], lty=ltys[i])
+#create legend
+legend("topright", colnames(data2plot),  
+       col=cols, lty=ltys, cex=0.75, 
+       border ="blue",  text.col = "green4", 
+       merge = TRUE, bg = "gray90")
+```
+Applying TMM normalization
+```{r, message = FALSE, tidy=TRUE}
+filteredData <-as.matrix(expDataFiltered[,2:32])
+rownames(filteredData) <- expDataFiltered$ID
+d <- edgeR::DGEList(counts=filteredData, group=samples$patients_group)
+```
+Calculate the normalization factor
+```{r, message = FALSE, tidy=TRUE}
+d <- calcNormFactors(d)
+expDataNorm <- cpm(d)
+```
+MDS plot.
+Green = CON, Blue = MS
+```{r eval=TRUE}
+edgeR::plotMDS.DGEList(d, labels=rownames(samples),
+  col = c("darkgreen","blue")[factor(samples$patients_group)])
 ```
 
 # Task 4: Interpret, and document.
