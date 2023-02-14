@@ -281,7 +281,8 @@ legend("topright", colnames(data2plot),
 <br />
 **Figure 2. Comparative distribution of gene expression across all the samples.**
 
-The major peak between all the samples are similar. 
+The major peak between all the samples are similar. This figure shows that there is a normal distribution, so TMM will be used for normalization.
+
 
 ## Apply TMM normalization
 ```{r, message = FALSE, tidy=TRUE}
