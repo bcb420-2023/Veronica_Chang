@@ -23,9 +23,21 @@ library("BiocManager")
 library("GEOmetadb")
 library("limma")
 library("edgeR")
+library("dplyr")
+library("Biobase")
+library("biomaRt")
+library("GEOmetadb")
+library("GEOquery")
+library("RColorBrewer")
+library("ggplot2")
+library("knitr")
+library("RSQLite")
+library("kableExtra")
+
+library(dplyr, warn.conflicts=FALSE)
 ```
 
-Prepare the database
+##Prepare the database
 
 ```{r, message=FALSE, tidy=TRUE}
 # Check if it already exists
@@ -39,7 +51,7 @@ geoTables <- DBI::dbListTables(con)
 geoTables
 ```
 
-Going to query the database.
+##Query the database.
 I am looking for series related to the human autoimmune disease, lupus or SLE.
 Therefore, the organims should contain `Homo sapiens` and the title of the series should contain one of `autoimmune`, `lupus`.
 Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
@@ -78,7 +90,7 @@ gplInfo <- GEOquery::Meta(GEOquery::getGEO(gpl))
 ```
 
 # Task 2: Clean the data and map to HUGO symbols.
-Fetch the data set.
+##Fetch the data set.
 ```{r, message=FALSE, tidy=TRUE}
 gseDir <- "/home/rstudio/projects/A1"
 if (! file.exists("~/projects/A1/GSE111972/GSE111972_norm_data.txt")) {
@@ -87,7 +99,9 @@ if (! file.exists("~/projects/A1/GSE111972/GSE111972_norm_data.txt")) {
   GEOquery::gunzip(fNames[1])
 }
 ```
+
 There is only one supplemental file for this study.
+
 ```{r, tidy=TRUE}
 file <- list.files(path = "~/projects/A1/GSE111972/", pattern = "\\.txt")
 expData <- read.table(paste0("~/projects/A1/GSE111972/", file), sep = "\t", 
@@ -95,8 +109,10 @@ expData <- read.table(paste0("~/projects/A1/GSE111972/", file), sep = "\t",
 colnames(expData)[2:32] <- sub("Sample_", "", colnames(expData))[2:32]
 dim(expData)
 ```
+
 There are 32 columns, the first being the Gene ID. There are 21283 rows (genes) in this data set.
-Defining the groups:
+
+##Define the groups:
 ```{r, tidy=TRUE}
 samples <- data.frame(lapply(colnames(expData)[2:32], 
         FUN=function(x){unlist(strsplit(x, 
@@ -107,13 +123,14 @@ samples <- data.frame(t(samples))
 samples
 ```
 
-Check for gene duplicates:
+##Check for gene duplicates
 ```{r, tidy=TRUE}
 length(unique(expData$ID))
 !(length(unique(expData$ID)) == dim(expData)[1]) 
 ```
 
 There are no gene duplicates. Going to remove genes with low counts.
+
 ```{r, message= FALSE, tidy=TRUE}
 cpms = cpm(expData[,2:32])
 rownames(cpms) <- expData[,1]
@@ -123,14 +140,52 @@ keep = rowSums(cpms >1) >=10
 expDataFiltered = expData[keep,]
 ```
 
-Map to HUGO
+## Identifier mapping
+###Building a Biomart Query
 ```{r, message= FALSE, tidy=TRUE}
+listMarts()
+ensembl <- useMart("ensembl")
+datasets <- listDatasets(ensembl)
+knitr::kable(head(datasets),format = "html")
 
+knitr::kable(head(datasets[grep(datasets$dataset,
+                  pattern = "sapiens"),]),format = "html")
+ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
+dim(listFilters(ensembl))
+
+knitr::kable(listFilters(ensembl)[1:10,1:2], type="html")
+biomart_human_filters <- listFilters(ensembl)
+```
+###Attributes 
+```{r, message= FALSE, tidy=TRUE}
+kable(searchAttributes(mart = ensembl, 'hgnc') , format="html") %>%
+  row_spec(2, background = "yellow")
+
+httr::set_config(httr::config(ssl_verifypeer = FALSE))
+ensembl <- biomaRt::useMart("ensembl", dataset="hsapiens_gene_ensembl")
 ```
 
+###Check 
+```{r, message= FALSE, tidy=TRUE}
+conversion_stash <- "geneIDConversion.rds"
+if (file.exists(conversion_stash)) {
+  geneIDConversion <- readRDS(conversion_stash)
+} else {
+  geneIDConversion <- biomaRt::getBM(attributes = "hgnc_symbol",
+                                  filters = "hgnc_symbol",
+                                  values = expDataFiltered$ID,
+                                  mart = ensembl)
+  saveRDS(geneIDConversion, conversion_stash)
+}
+
+#find the genes that do not use HGNC annotation
+not_hgnc <- expDataFiltered[-(which(rownames(keep) %in% geneIDConversion$hgnc_symbol)), ]
+```
+
+Seems like all genes are already annotated with HGNC symbols.
 
 # Task 3: Apply Normalization.
-Check statistical summaries
+##Check statistical summaries
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 summaryStats <- data.frame(apply(expDataFiltered[, 2:32], 2, summary))
 summaryStats
@@ -156,8 +211,8 @@ knitr::kable(summaryStats2, format = "html", col.names = colnames(summaryStats2)
 Means of the different groups are similar to each other for each tissue. This suggests that variations in gene counts can be attributed to biological variations rather than technical variations.
 
 
-Check distribution:
-```{r, message = FALSE, tidy=TRUE}
+##Check distribution:
+```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 tissueGroup <- as.factor(samples$tissue)
 tissueGroup <- c("grey", "white")[tissueGroup]
 patientGroup <- as.factor(samples$patients_group)
@@ -199,20 +254,22 @@ legend("topright", colnames(data2plot),
        merge = TRUE, bg = "gray90")
 ```
 
-
-Applying TMM normalization
+##Apply TMM normalization
 ```{r, message = FALSE, tidy=TRUE}
 filteredData <-as.matrix(expDataFiltered[,2:32])
 rownames(filteredData) <- expDataFiltered$ID
 d <- edgeR::DGEList(counts=filteredData, group=samples$patients_group)
 ```
-Calculate the normalization factor
+
+##Calculate the normalization factor
 ```{r, message = FALSE, tidy=TRUE}
 d <- calcNormFactors(d)
 expDataNorm <- cpm(d)
 ```
-MDS plot.
+
+##MDS plot
 Green = CON, Blue = MS
+
 ```{r eval=TRUE}
 edgeR::plotMDS.DGEList(d, labels=rownames(samples),
   col = patientGroup)
