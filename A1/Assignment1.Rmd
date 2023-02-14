@@ -349,6 +349,7 @@ legend("topright", colnames(data3plot),
 <br />
 **Figure 4. Comparative distribution of gene expression across all the samples after TMM normalization.**
 
+There is not much of a difference between the normalized and the non-normalized data. Additionally, there is the same number of genes between them. 
 
 ## MDS plot
 
@@ -359,6 +360,14 @@ edgeR::plotMDS.DGEList(d, labels=rownames(samples),
 
 <br />
 **Figure 3. MDS plot of all samples, coloured according to `group` which is the combination of `patient_group` and `tissue`.**
+
+The tissues cluster together despite the patient group. 
+
+### Final normalized data
+```{r, tidy=TRUE, warning=FALSE}
+kable(head(expDataNorm), format = "html")
+```
+
 
 # Task 4: Interpret, and document
 
@@ -378,7 +387,7 @@ N/A.
 No. 
 
 ### How many outliers were removed?
-After filtering the lowly expressed genes, we were left with 15076 genes compared to the original 21283. A total of 6207 genes were removed. 
+After filtering the lowly expressed genes, we were left with 15076 genes compared to the original 21283. A total of 6207 genes were removed. The number of genes did not change after normalization. 
 
 ### How did you handle replicates?
 All replicates for each patient group and tissue were treated as separate samples. The replicates can be sorted by their `tissue` and their `patient_group`. In the MDS plot, we can see that the samples mostly cluster together as tissues. 
