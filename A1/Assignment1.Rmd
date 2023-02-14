@@ -277,6 +277,7 @@ legend("topright", colnames(data2plot),
        border="blue", text.col = "black",
        merge = TRUE, bg = "snow2")
 
+title(main="Density plot of MS patients and non-neurological controls")
 ```
 <br />
 **Figure 2. Comparative distribution of gene expression across all the samples.**
@@ -305,11 +306,12 @@ data3plot <- log2(cpm(expDataNorm))
 boxplot(data3plot, xlab = "Samples", ylab = "log2 CPM", 
         las = 2, cex = 0.5, cex.lab = 0.5, col = colGroup,
         cex.axis = 0.5, main = "Grey–white matter of multiple sclerosis patients 
-        and non-neurological control donors")
+        and non-neurological control donors post-normalization")
 
 # draw the median on each box plot
 abline(h = median(apply(data2plot, 2, median)), 
        col = "red", lwd = 0.6, lty = "dashed")
+
 ```
 <br />
 **Figure 3. Box plot comparison differentiating between the different `patient_group` and `tissue` after TMM normalization.**
@@ -345,6 +347,7 @@ legend("topright", colnames(data3plot),
        col=cols, lty=ltys, cex=0.75,
        border="blue", text.col = "black",
        merge = TRUE, bg = "snow2")
+title(main="Density plot of MS patients and non-neurological controls post-normalization")
 
 ```
 <br />
@@ -357,6 +360,7 @@ There is not much of a difference between the normalized and the non-normalized 
 ```{r eval=TRUE}
 edgeR::plotMDS.DGEList(d, labels=rownames(samples),
   col = colGroup)
+title(main="MDS plot of MS patients and non-neurological controls")
 ```
 
 <br />
