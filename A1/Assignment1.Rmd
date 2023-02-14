@@ -340,12 +340,67 @@ d <- calcNormFactors(d)
 expDataNorm <- cpm(d)
 ```
 
+## Check distribution after normalization
+### Boxplot
+
+```{r warning=FALSE,message=FALSE}
+data3plot <- log2(cpm(expDataNorm))
+boxplot(data3plot, xlab = "Samples", ylab = "log2 CPM", 
+        las = 2, cex = 0.5, cex.lab = 0.5, col = colGroup,
+        cex.axis = 0.5, main = "Grey–white matter of multiple sclerosis patients 
+        and non-neurological control donors")
+
+# draw the median on each box plot
+abline(h = median(apply(data2plot, 2, median)), 
+       col = "red", lwd = 0.6, lty = "dashed")
+```
+<br />
+**Figure 3. Box plot comparison differentiating between the different `patient_group` and `tissue` after TMM normalization.**
+
+### Density plot
+
+```{r, message = FALSE, tidy=TRUE, warning=FALSE}
+# density plot
+densityCounts2 <- apply(log2(edgeR::cpm(expDataNorm[,3:8])),
+                        2, density)
+
+# calculate  limits
+xlim <- 0; ylim <- 0
+for (i in 1:length(densityCounts2)) {
+  xlim <- range(c(xlim, densityCounts2[[i]]$x));
+  ylim <- range(c(ylim, densityCounts2[[i]]$y))
+}
+
+cols <- rainbow(length(densityCounts2))
+ltys <- rep(1, length(densityCounts2))
+
+# plot the first
+plot(densityCounts2[[1]], xlim=xlim, ylim=ylim, type="n",
+     ylab="Smoothing density of log2-CPM",
+     main="", cex.lab=0.85)
+
+# plot the lines
+for (i in 1:length(densityCounts2))
+  lines(densityCounts2[[i]], col=cols[i], lty=ltys[i])
+
+# add legend
+legend("topright", colnames(data3plot),
+       col=cols, lty=ltys, cex=0.75,
+       border="blue", text.col = "black",
+       merge = TRUE, bg = "snow2")
+
+```
+<br />
+**Figure 4. Comparative distribution of gene expression across all the samples after TMM normalization.**
+
+
 ## MDS plot
 
 ```{r eval=TRUE}
 edgeR::plotMDS.DGEList(d, labels=rownames(samples),
   col = colGroup)
 ```
+
 <br />
 **Figure 3. MDS plot of all samples, coloured according to `group` which is the combination of `patient_group` and `tissue`.**
 
