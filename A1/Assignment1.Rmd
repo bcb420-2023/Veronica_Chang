@@ -92,7 +92,7 @@ There is only one supplemental file for this study.
 file <- list.files(path = "~/projects/A1/GSE111972/", pattern = "\\.txt")
 expData <- read.table(paste0("~/projects/A1/GSE111972/", file), sep = "\t", 
                         header = TRUE, check.names = FALSE)
-colnames(expData)
+colnames(expData)[2:32] <- sub("Sample_", "", colnames(expData))[2:32]
 dim(expData)
 ```
 There are 32 columns, the first being the Gene ID. There are 21283 rows (genes) in this data set.
@@ -100,9 +100,9 @@ Defining the groups:
 ```{r, tidy=TRUE}
 samples <- data.frame(lapply(colnames(expData)[2:32], 
         FUN=function(x){unlist(strsplit(x, 
-                        split = "\\_"))[c(2,3,4)]}))
-colnames(samples) <- colnames(expData)[2:32]
-rownames(samples) <- c("patients_group","tissue","sample")
+                        split = "\\_"))[c(1,2,3)]}))
+colnames(samples) <- sub("Sample_", "", colnames(expData))[2:32]
+rownames(samples) <- c("patients_group","tissue","replicate")
 samples <- data.frame(t(samples))
 samples
 ```
@@ -123,43 +123,56 @@ keep = rowSums(cpms >1) >=10
 expDataFiltered = expData[keep,]
 ```
 
+Map to HUGO
+```{r, message= FALSE, tidy=TRUE}
+
+```
+
+
 # Task 3: Apply Normalization.
 Check statistical summaries
-```{r, message = FALSE, tidy=TRUE}
+```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 summaryStats <- data.frame(apply(expDataFiltered[, 2:32], 2, summary))
 summaryStats
 
 # Calculate the summary statistics for each group
 
 # CON (non-neurological control) WM (white matter)
-summaryCONWM <- summary(rowMeans(expDataFiltered[, grep("Sample_CON_WM", colnames(expDataFiltered))]))
+summaryCONWM <- summary(rowMeans(expDataFiltered[, grep("CON_WM", colnames(expDataFiltered))]))
 # MS (multiple sclerosis) WM (white matter)
-summaryMSWM <- summary(rowMeans(expDataFiltered[, grep("Sample_MS_WM", colnames(expDataFiltered))]))
+summaryMSWM <- summary(rowMeans(expDataFiltered[, grep("MS_WM", colnames(expDataFiltered))]))
 # CON (non-neurological control) GM (grey matter)
-summaryCONGM <- summary(rowMeans(expDataFiltered[, grep("Sample_CON_GM", colnames(expDataFiltered))]))
+summaryCONGM <- summary(rowMeans(expDataFiltered[, grep("CON_GM", colnames(expDataFiltered))]))
 # MS (multiple sclerosis) GM (grey matter)
-summaryMSGM <- summary(rowMeans(expDataFiltered[, grep("Sample_MS_GM", colnames(expDataFiltered))]))
+summaryMSGM <- summary(rowMeans(expDataFiltered[, grep("MS_GM", colnames(expDataFiltered))]))
 
 # Combine all
 summaryStats2 <- rbind(summaryCONWM, summaryMSWM, summaryCONGM, summaryMSGM)
 rownames(summaryStats2) <- c("CON WM", "MS WM", "CON GM", "MS GM")
 knitr::kable(summaryStats2, format = "html", col.names = colnames(summaryStats2)) 
 ```
+
+
 Means of the different groups are similar to each other for each tissue. This suggests that variations in gene counts can be attributed to biological variations rather than technical variations.
 
 
 Check distribution:
 ```{r, message = FALSE, tidy=TRUE}
+tissueGroup <- as.factor(samples$tissue)
+tissueGroup <- c("grey", "white")[tissueGroup]
+patientGroup <- as.factor(samples$patients_group)
+patientGroup <- c("forestgreen", "dodgerblue")[patientGroup]
+
 # box plot
 data2plot <- log2(cpm(expDataFiltered[,2:32]))
 boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
-        las = 2, cex = 0.5, cex.lab = 0.5,
+        las = 2, cex = 0.5, cex.lab = 0.5, col = patientGroup,
         cex.axis = 0.5, main = "Grey–white matter of multiple sclerosis patients 
         and non-neurological control donors")
 
 # draw the median on each box plot
 abline(h = median(apply(data2plot, 2, median)), 
-       col = "green", lwd = 0.6, lty = "dashed")
+       col = "red", lwd = 0.6, lty = "dashed")
 
 # density plot
 counts_density <- apply(log2(cpm(expDataFiltered[,3:32])), 
@@ -185,6 +198,8 @@ legend("topright", colnames(data2plot),
        border ="blue",  text.col = "green4", 
        merge = TRUE, bg = "gray90")
 ```
+
+
 Applying TMM normalization
 ```{r, message = FALSE, tidy=TRUE}
 filteredData <-as.matrix(expDataFiltered[,2:32])
@@ -200,7 +215,7 @@ MDS plot.
 Green = CON, Blue = MS
 ```{r eval=TRUE}
 edgeR::plotMDS.DGEList(d, labels=rownames(samples),
-  col = c("darkgreen","blue")[factor(samples$patients_group)])
+  col = patientGroup)
 ```
 
 # Task 4: Interpret, and document.
