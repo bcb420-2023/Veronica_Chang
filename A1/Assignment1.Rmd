@@ -47,7 +47,7 @@ library("RSQLite")
 library("kableExtra")
 ```
 
-## Selected the dataset **GSE111972**
+## Selected the dataset GSE111972
 
 Description below [@vanderPoel2019]
 
@@ -64,7 +64,7 @@ gplInfo <- GEOquery::Meta(GEOquery::getGEO(gpl))
 Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease. MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS). Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences. Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes. Their role in MS is complex and controversial [@luo2017]. 
 
 ### General Experimental Design
-In total 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter and 10 white matter samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples. From each sample total RNA was extracted.[@vanderPoel2019]
+In total 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter and 10 white matter samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples. From each sample total RNA was extracted [@vanderPoel2019].
 	
 ### Study objectives
 The authors isolated human microglia according to the previously described general experimental design. They suggest that pathological changes in MS tissue may be associated with changes in microglia, leading to lesion initiation. The authors wanted to analyze the transcriptional profile of microglia in the collected samples by RNA-sequencing [@luo2017]. Ultimately, they wanted to discover MS-related changes in microglia between the GM and WM brain regions.
@@ -93,25 +93,28 @@ colnames(expData)[2:32] <- sub("Sample_", "", colnames(expData))[2:32]
 dim(expData)
 ```
 
-There are 32 columns, the first being the Gene ID. There are 21283 rows (genes) in this data set.
+From this we see there are 21283 rows and 32 columns (the first being the Gene ID) in this data set.  The rows
+correspond to genes and the columns correspond to the different samples. The samples can be divided into
+`patient_group`, MS and CON, and `tissue`, GM, WM.
 
 ## Define the groups
 
 ```{r, tidy=TRUE}
+# going to remove the "Sample_" portion from the column names as they do not hold any information
 samples <- data.frame(lapply(colnames(expData)[2:32], 
         FUN=function(x){unlist(strsplit(x, 
                         split = "\\_"))[c(1,2,3)]}))
 colnames(samples) <- sub("Sample_", "", colnames(expData))[2:32]
-rownames(samples) <- c("patients_group","tissue","replicate")
+rownames(samples) <- c("patient_group","tissue","replicate")
 samples <- data.frame(t(samples))
 
-# made another group that combined patients_group and tissue for easier comparison
-samples$group <- paste(samples$patients_group,samples$tissue)
+# made another group that combined patient_group and tissue for easier comparison
+samples$group <- paste(samples$patient_group,samples$tissue)
 
 samples
 ```
 
-##Check for gene duplicates
+## Check for gene duplicates
 
 ```{r, tidy=TRUE}
 length(unique(expData$ID))
@@ -180,7 +183,7 @@ if (file.exists(conversion_stash)) {
 not_hgnc <- expDataFiltered[-(which(rownames(keep) %in% geneIDConversion$hgnc_symbol)), ]
 ```
 
-Seems like all genes are already annotated with HGNC symbols.
+Seems like all genes are already annotated with HGNC symbols. The authors may have already filtered the genes. 
 
 # Task 3: Apply Normalization
 
@@ -219,7 +222,7 @@ Means of the different groups are similar to each other for each tissue. This su
 # colour groups
 tissueGroup <- as.factor(samples$tissue)
 tissueGroup <- c("grey", "white")[tissueGroup]
-patientGroup <- as.factor(samples$patients_group)
+patientGroup <- as.factor(samples$patient_group)
 patientGroup <- c("forestgreen", "dodgerblue")[patientGroup]
 
 colGroup <- as.factor(samples$group)
@@ -227,7 +230,7 @@ levels(colGroup) <-  brewer.pal(nlevels(colGroup), "Spectral")
 colGroup <- as.character(colGroup)
 ```
 
-### Plot a box plot
+### Box plot
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 # box plot
 data2plot <- log2(cpm(expDataFiltered[,2:32]))
@@ -245,7 +248,7 @@ abline(h = median(apply(data2plot, 2, median)),
 
 The distribution and spread across all the samples are quite consistent.
 
-### Plot a density plot. 
+### Density plot
 
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 # density plot
@@ -289,7 +292,8 @@ The major peak between all the samples are similar. This figure shows that there
 ```{r, message = FALSE, tidy=TRUE}
 filteredData <-as.matrix(expDataFiltered[,2:32])
 rownames(filteredData) <- expDataFiltered$ID
-d <- edgeR::DGEList(counts=filteredData, group=samples$patients_group)
+# create DGEList object
+d <- edgeR::DGEList(counts=filteredData, group=samples$patient_group)
 ```
 
 ## Calculate the normalization factor
@@ -364,9 +368,22 @@ title(main="MDS plot of MS patients and non-neurological controls")
 ```
 
 <br />
-**Figure 3. MDS plot of all samples, coloured according to `group` which is the combination of `patient_group` and `tissue`.**
+**Figure 5. MDS plot of all samples, coloured according to `group` which is the combination of `patient_group` and `tissue`.**
 
 The tissues cluster together despite the patient group. 
+
+
+## Dispersion
+```{r, tidy=TRUE, warning=FALSE}
+# BCV plot
+modelDesign <- model.matrix(~samples$group)
+dispersion <- edgeR::estimateDisp(d, modelDesign)
+edgeR::plotBCV(dispersion, col.tagwise = "black", col.common = "red", main = "Dispersion-squared BCV Plot")
+```
+<br />
+**Figure 6. Dispersion-squared biological coefficient of variation plot of dispersion estimates**
+
+The `plotBCV` function allows us to generate a genewise biological coefficient of variation (BCV) plot of dispersion estimates - showing us the association between the average abundance and the dispersion/BCV. With the red line, we can see the common dispersion estimates the overall BCV averaged over all genes. The black dots represent the tagwise dispersion estimates. The blue curve visualizes the trend of dispersion estimates. 
 
 ### Final normalized data
 ```{r, tidy=TRUE, warning=FALSE}
