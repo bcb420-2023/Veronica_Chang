@@ -47,50 +47,6 @@ library("RSQLite")
 library("kableExtra")
 ```
 
-
-## Prepare the database
-
-```{r, message=FALSE, tidy=TRUE}
-# Check if it already exists
-if(!file.exists('GEOmetadb.sqlite')) GEOmetadb::getSQLiteFile()
-file.info('GEOmetadb.sqlite')
-
-# Connect to the database
-con <- DBI::dbConnect(RSQLite::SQLite(),'GEOmetadb.sqlite',`synchronous` = NULL)
-DBI::dbListFields(con, 'gpl')
-geoTables <- DBI::dbListTables(con)
-geoTables
-```
-
-
-## Query the database
-
-I am looking for series related to the human autoimmune diseases, lupus or multiple sclerosis. Therefore, the organisms should contain `Homo sapiens` and the title of the series should contain one of `multiple sclerosis` or  `lupus`. Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
-
-```{r, message=FALSE, tidy=TRUE}
-results <- DBI::dbGetQuery(con,'select * from gpl limit 5')
-knitr::kable(head(results[,1:5]), format = "pipe")
-
-# Build the SQL query
-sql <- paste("SELECT DISTINCT gse.title, gse.gse, gpl.title,",
-             " gse.submission_date,",
-             " gse.supplementary_file",
-             "FROM",
-             "  gse JOIN gse_gpl ON gse_gpl.gse=gse.gse",
-             "  JOIN gpl ON gse_gpl.gpl=gpl.gpl",
-             "WHERE",
-             "  gpl.organism LIKE '%Homo sapiens%' AND",
-             "  gse.title LIKE '%lupus%' OR gse.title LIKE '%multiple sclerosis%' AND",
-             "  gpl.technology LIKE '%high-throughput sequencing%' AND",
-             "  gse.submission_date > '2013-01-01'",
-             "  ORDER BY gse.submission_date DESC",
-             sep=" ")
-
-# Initiate the query
-rs <- DBI::dbGetQuery(con,sql)
-dim(rs)
-```
-
 ## Selected the dataset **GSE111972**
 
 Description below [@vanderPoel2019]

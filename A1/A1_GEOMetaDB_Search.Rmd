@@ -1,0 +1,93 @@
+---
+title: "BCB420 Assignment 1: GEOMetaDB Searching"
+author: "Veronica Chang"
+date: "February 14th, 2023"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: sentence
+bibliography: a1.bib
+---
+
+# Install packages and select an expression data set
+
+## Packages
+* [BiocManager](https://CRAN.R-project.org/package=BiocManager) [@morgan2022]
+* [GEOmetadb](https://bioconductor.org/packages/release/bioc/html/GEOmetadb.html) [@zhu2008]
+* [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) [@smyth2015]
+* [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) [@robinson2010]
+* [biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) [@durinck2009]
+* [GEOquery](https://bioconductor.org/packages/release/bioc/html/GEOquery.html) [@davis2007]
+* [Biobase](https://bioconductor.org/packages/release/bioc/html/Biobase.html) [@huber2015]
+* [RColorBrewer](https://cran.r-project.org/package=RColorBrewer) [@neuwirth2022]
+```{r, message=FALSE, warning=FALSE}
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (!requireNamespace("GEOmetadb", quietly = TRUE))
+    BiocManager::install("GEOmetadb")
+
+library("BiocManager")
+library("GEOmetadb")
+library("limma")
+library("edgeR")
+library("dplyr")
+library("Biobase")
+library("biomaRt")
+library("GEOquery")
+library("RColorBrewer")
+library("ggplot2")
+library("knitr")
+library("RSQLite")
+library("kableExtra")
+```
+
+
+## Prepare the database
+
+```{r, message=FALSE, tidy=TRUE}
+# Check if it already exists
+if(!file.exists('GEOmetadb.sqlite')) GEOmetadb::getSQLiteFile()
+file.info('GEOmetadb.sqlite')
+
+# Connect to the database
+con <- DBI::dbConnect(RSQLite::SQLite(),'GEOmetadb.sqlite',`synchronous` = NULL)
+DBI::dbListFields(con, 'gpl')
+geoTables <- DBI::dbListTables(con)
+geoTables
+```
+
+
+## Query the database
+
+I am looking for series related to the human autoimmune diseases, lupus or multiple sclerosis. Therefore, the organisms should contain `Homo sapiens` and the title of the series should contain one of `multiple sclerosis` or  `lupus`. Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
+
+```{r, message=FALSE, tidy=TRUE}
+results <- DBI::dbGetQuery(con,'select * from gpl limit 5')
+knitr::kable(head(results[,1:5]), format = "pipe")
+
+# Build the SQL query
+sql <- paste("SELECT DISTINCT gse.title, gse.gse, gpl.title,",
+             " gse.submission_date,",
+             " gse.supplementary_file",
+             "FROM",
+             "  gse JOIN gse_gpl ON gse_gpl.gse=gse.gse",
+             "  JOIN gpl ON gse_gpl.gpl=gpl.gpl",
+             "WHERE",
+             "  gpl.organism LIKE '%Homo sapiens%' AND",
+             "  gse.title LIKE '%lupus%' OR gse.title LIKE '%multiple sclerosis%' AND",
+             "  gpl.technology LIKE '%high-throughput sequencing%' AND",
+             "  gse.submission_date > '2013-01-01'",
+             "  ORDER BY gse.submission_date DESC",
+             sep=" ")
+
+# Initiate the query
+rs <- DBI::dbGetQuery(con,sql)
+knitr::kable(rs, format = "pipe")
+dim(rs)
+```
