@@ -1,7 +1,7 @@
 ---
 title: "BCB420 Assignment 1: Data set selection and initial processing"
 author: "Veronica Chang"
-date: "r Sys.Date()"
+date: "February 14th, 2023"
 output:
   html_document:
     toc: true
@@ -11,12 +11,20 @@ output:
 editor_options: 
   markdown: 
     wrap: sentence
+bibliography: a1.bib
 ---
 
 # Task 1: Install packages and select an expression data set
 
 ## Packages
-
+* [BiocManager](https://CRAN.R-project.org/package=BiocManager) [@morgan2022]
+* [GEOmetadb](https://bioconductor.org/packages/release/bioc/html/GEOmetadb.html) [@zhu2008]
+* [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) [@smyth2015]
+* [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) [@robinson2010]
+* [biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) [@durinck2009]
+* [GEOquery](https://bioconductor.org/packages/release/bioc/html/GEOquery.html) [@davis2007]
+* [Biobase](https://bioconductor.org/packages/release/bioc/html/Biobase.html) [@huber2015]
+* [RColorBrewer](https://cran.r-project.org/package=RColorBrewer) [@neuwirth2022]
 ```{r, message=FALSE, warning=FALSE}
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -31,7 +39,6 @@ library("edgeR")
 library("dplyr")
 library("Biobase")
 library("biomaRt")
-library("GEOmetadb")
 library("GEOquery")
 library("RColorBrewer")
 library("ggplot2")
@@ -56,11 +63,9 @@ geoTables
 ```
 
 
-##Query the database.
+## Query the database
 
-I am looking for series related to the human autoimmune disease, lupus or SLE.
-Therefore, the organims should contain `Homo sapiens` and the title of the series should contain one of `autoimmune`, `lupus`.
-Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
+I am looking for series related to the human autoimmune diseases, lupus or multiple sclerosis. Therefore, the organisms should contain `Homo sapiens` and the title of the series should contain one of `multiple sclerosis` or  `lupus`. Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
 
 ```{r, message=FALSE, tidy=TRUE}
 results <- DBI::dbGetQuery(con,'select * from gpl limit 5')
@@ -87,7 +92,10 @@ knitr::kable(rs, format = "pipe")
 dim(rs)
 ```
 
-### Selected the dataset **GSE111972**, description below
+## Selected the dataset **GSE111972**
+
+Description below [@vanderPoel2019]
+
 ```{r, message=FALSE, tidy=TRUE}
 gseAccession <- "GSE111972"
 gse <- GEOquery::getGEO(gseAccession, GSEMatrix = FALSE)
@@ -130,6 +138,7 @@ samples <- data.frame(lapply(colnames(expData)[2:32],
 colnames(samples) <- sub("Sample_", "", colnames(expData))[2:32]
 rownames(samples) <- c("patients_group","tissue","replicate")
 samples <- data.frame(t(samples))
+samples$group <- paste(samples$patients_group,samples$tissue)
 samples
 ```
 
@@ -155,7 +164,7 @@ expDataFiltered = expData[keep,]
 
 ## Identifier mapping
 
-### Building a Biomart Query
+### Build a Biomart Query
 
 ```{r, message= FALSE, tidy=TRUE}
 listMarts()
@@ -182,7 +191,7 @@ httr::set_config(httr::config(ssl_verifypeer = FALSE))
 ensembl <- biomaRt::useMart("ensembl", dataset="hsapiens_gene_ensembl")
 ```
 
-### Check
+### Check for genes without HGNC annotation
 
 ```{r, message= FALSE, tidy=TRUE}
 conversion_stash <- "geneIDConversion.rds"
@@ -233,15 +242,20 @@ Means of the different groups are similar to each other for each tissue. This su
 
 ## Check distribution
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
+# colour groups
 tissueGroup <- as.factor(samples$tissue)
 tissueGroup <- c("grey", "white")[tissueGroup]
 patientGroup <- as.factor(samples$patients_group)
 patientGroup <- c("forestgreen", "dodgerblue")[patientGroup]
 
+colGroup <- as.factor(samples$group)
+levels(colGroup) <-  brewer.pal(nlevels(colGroup), "Spectral")
+colGroup <- as.character(colGroup)
+
 # box plot
 data2plot <- log2(cpm(expDataFiltered[,2:32]))
 boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
-        las = 2, cex = 0.5, cex.lab = 0.5, col = patientGroup,
+        las = 2, cex = 0.5, cex.lab = 0.5, col = colGroup,
         cex.axis = 0.5, main = "Grey–white matter of multiple sclerosis patients 
         and non-neurological control donors")
 
@@ -262,7 +276,7 @@ counts_density <- apply(log2(cpm(expDataFiltered[,3:32])),
   cols <- rainbow(length(counts_density))
   ltys <- rep(1, length(counts_density))
   
-# plot the first density plot to initialize 
+# plot the first density plot
 plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n", 
      ylab="Smoothing density of log2-CPM", 
      main="", cex.lab = 0.85)
@@ -293,20 +307,43 @@ expDataNorm <- cpm(d)
 
 ## MDS plot
 
-Green = CON, Blue = MS
-
 ```{r eval=TRUE}
 edgeR::plotMDS.DGEList(d, labels=rownames(samples),
-  col = patientGroup)
+  col = colGroup)
 ```
 
-# Task 4: Interpret, and document.
+# Task 4: Interpret, and document
 
-What are the control and test conditions of the dataset?
-Why is the dataset of interest to you?
-Were there expression values that were not unique for specific genes?
-How did you handle these?
-Were there expression values that could not be mapped to current HUGO symbols?
-How many outliers were removed?
-How did you handle replicates?
-What is the final coverage of your dataset?
+### What are the control and test conditions of the dataset?
+The control is the **CON** patient group that consisted of non-neurological control donors. This group is compared against the **MS** patient group which consisted of multiple sclerosis patients in two tissues: **GM** (grey matter) and **WM** (white matter) from the brain.
+
+### Why is the dataset of interest to you?
+I am currently studying the sex bias in antigen-presenting cells in the mouse model experimental autoimmune encephalomyelitis for the human disease multiple sclerosis. While this research project is mainly wet lab, I want to try using bioinformatics to analyze differences in MS. 
+
+### Were there expression values that were not unique for specific genes?
+There were no duplicated in the gene IDs in the original data set. This stayed the same when trying to conduct identifier mapping. 
+
+### How did you handle these?
+N/A.
+
+### Were there expression values that could not be mapped to current HUGO symbols?
+No. 
+
+### How many outliers were removed?
+After filtering the lowly expressed genes, we were left with 15076 genes compared to the original 21283. A total of 6207 genes were removed. 
+
+### How did you handle replicates?
+All replicates for each patient group and tissue were treated as separate samples. In the MDS plot, we can see that the samples mostly cluster together as tissues. Since we have multiple replicates for each patient group and tissue, we removed lowly expressed genes from these replicates.
+    
+### What is the final coverage of your dataset?
+The final dataset is made up of:
+
+    - `r nrow(expDataNorm)` with unique identifiers.
+    
+    - 31 samples in total.
+    
+    - 2 patient groups *MS* and *CON*, and 2 tissues *GM*, *WM*.
+    
+    - 11 replicates for WM in both patient groups.
+    
+    - 5 replicates for GM in both patient groups.
