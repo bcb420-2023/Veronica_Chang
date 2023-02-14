@@ -88,7 +88,6 @@ sql <- paste("SELECT DISTINCT gse.title, gse.gse, gpl.title,",
 
 # Initiate the query
 rs <- DBI::dbGetQuery(con,sql)
-knitr::kable(rs, format = "pipe")
 dim(rs)
 ```
 
@@ -102,6 +101,17 @@ gse <- GEOquery::getGEO(gseAccession, GSEMatrix = FALSE)
 gpl <- names(GEOquery::GPLList(gse))[1]
 gplInfo <- GEOquery::Meta(GEOquery::getGEO(gpl))
 ```
+
+## Introduction
+
+### Background
+Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease. MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS). Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences. Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes. Their role in MS is complex and controversial [@luo2017]. 
+
+### General Experimental Design
+In total 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter and 10 white matter samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples. From each sample total RNA was extracted.[@vanderPoel2019]
+	
+### Study objectives
+The authors isolated human microglia according to the previously described general experimental design. They suggest that pathological changes in MS tissue may be associated with changes in microglia, leading to lesion initiation. The authors wanted to analyze the transcriptional profile of microglia in the collected samples by RNA-sequencing [@luo2017]. Ultimately, they wanted to discover MS-related changes in microglia between the GM and WM brain regions.
 
 
 # Task 2: Clean the data and map to HUGO symbols
@@ -138,7 +148,10 @@ samples <- data.frame(lapply(colnames(expData)[2:32],
 colnames(samples) <- sub("Sample_", "", colnames(expData))[2:32]
 rownames(samples) <- c("patients_group","tissue","replicate")
 samples <- data.frame(t(samples))
+
+# made another group that combined patients_group and tissue for easier comparison
 samples$group <- paste(samples$patients_group,samples$tissue)
+
 samples
 ```
 
@@ -167,11 +180,13 @@ expDataFiltered = expData[keep,]
 ### Build a Biomart Query
 
 ```{r, message= FALSE, tidy=TRUE}
+# get available marts
 listMarts()
 ensembl <- useMart("ensembl")
 datasets <- listDatasets(ensembl)
 knitr::kable(head(datasets),format = "html")
 
+# get only human
 knitr::kable(head(datasets[grep(datasets$dataset,
                   pattern = "sapiens"),]),format = "html")
 ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
@@ -236,11 +251,14 @@ rownames(summaryStats2) <- c("CON WM", "MS WM", "CON GM", "MS GM")
 knitr::kable(summaryStats2, format = "html", col.names = colnames(summaryStats2)) 
 ```
 
+<br />
 
-Means of the different groups are similar to each other for each tissue. This suggests that variations in gene counts can be attributed to biological variations rather than technical variations.
+Means of the different groups are similar to each other for each tissue. This suggests that variations in gene counts can be attributed to biological variations rather than technical variations. 
 
 
 ## Check distribution
+
+### Define colour groups for  plots
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 # colour groups
 tissueGroup <- as.factor(samples$tissue)
@@ -251,7 +269,10 @@ patientGroup <- c("forestgreen", "dodgerblue")[patientGroup]
 colGroup <- as.factor(samples$group)
 levels(colGroup) <-  brewer.pal(nlevels(colGroup), "Spectral")
 colGroup <- as.character(colGroup)
+```
 
+### Plot a box plot
+```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 # box plot
 data2plot <- log2(cpm(expDataFiltered[,2:32]))
 boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
@@ -262,35 +283,49 @@ boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM",
 # draw the median on each box plot
 abline(h = median(apply(data2plot, 2, median)), 
        col = "red", lwd = 0.6, lty = "dashed")
+```
+<br />
+**Figure 1. Box plot comparison differentiating between the different `patient_group` and `tissue`.**
 
+The distribution and spread across all the samples are quite consistent.
+
+### Plot a density plot. 
+
+```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 # density plot
-counts_density <- apply(log2(cpm(expDataFiltered[,3:32])), 
+densityCounts <- apply(log2(edgeR::cpm(expDataFiltered[,3:8])),
                         2, density)
 
 # calculate  limits
-  xlim <- 0; ylim <- 0
-  for (i in 1:length(counts_density)) {
-    xlim <- range(c(xlim, counts_density[[i]]$x)); 
-    ylim <- range(c(ylim, counts_density[[i]]$y))
-  }
-  cols <- rainbow(length(counts_density))
-  ltys <- rep(1, length(counts_density))
-  
-# plot the first density plot
-plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n", 
-     ylab="Smoothing density of log2-CPM", 
-     main="", cex.lab = 0.85)
+xlim <- 0; ylim <- 0
+for (i in 1:length(densityCounts)) {
+  xlim <- range(c(xlim, densityCounts[[i]]$x));
+  ylim <- range(c(ylim, densityCounts[[i]]$y))
+}
+
+cols <- rainbow(length(densityCounts))
+ltys <- rep(1, length(densityCounts))
+
+# plot the first
+plot(densityCounts[[1]], xlim=xlim, ylim=ylim, type="n",
+     ylab="Smoothing density of log2-CPM",
+     main="", cex.lab=0.85)
 
 # plot the lines
-for (i in 1:length(counts_density)) 
-  lines(counts_density[[i]], col=cols[i], lty=ltys[i])
+for (i in 1:length(densityCounts))
+  lines(densityCounts[[i]], col=cols[i], lty=ltys[i])
 
 # add legend
-legend("topright", colnames(data2plot),  
-       col=cols, lty=ltys, cex=0.75, 
-       border ="blue",  text.col = "green4", 
-       merge = TRUE, bg = "gray90")
+legend("topright", colnames(data2plot),
+       col=cols, lty=ltys, cex=0.75,
+       border="blue", text.col = "black",
+       merge = TRUE, bg = "snow2")
+
 ```
+<br />
+**Figure 2. Comparative distribution of gene expression across all the samples.**
+
+The major peak between all the samples are similar. 
 
 ## Apply TMM normalization
 ```{r, message = FALSE, tidy=TRUE}
@@ -311,6 +346,8 @@ expDataNorm <- cpm(d)
 edgeR::plotMDS.DGEList(d, labels=rownames(samples),
   col = colGroup)
 ```
+<br />
+**Figure 3. MDS plot of all samples, coloured according to `group` which is the combination of `patient_group` and `tissue`.**
 
 # Task 4: Interpret, and document
 
@@ -318,7 +355,7 @@ edgeR::plotMDS.DGEList(d, labels=rownames(samples),
 The control is the **CON** patient group that consisted of non-neurological control donors. This group is compared against the **MS** patient group which consisted of multiple sclerosis patients in two tissues: **GM** (grey matter) and **WM** (white matter) from the brain.
 
 ### Why is the dataset of interest to you?
-I am currently studying the sex bias in antigen-presenting cells in the mouse model experimental autoimmune encephalomyelitis for the human disease multiple sclerosis. While this research project is mainly wet lab, I want to try using bioinformatics to analyze differences in MS. 
+I am currently conducting a research project for the course IMM450 where I am studying the sex bias in antigen-presenting cells in the mouse model experimental autoimmune encephalomyelitis for the human disease multiple sclerosis. While this research project is mainly wet lab, I want to try using bioinformatics to analyze differences in MS. 
 
 ### Were there expression values that were not unique for specific genes?
 There were no duplicated in the gene IDs in the original data set. This stayed the same when trying to conduct identifier mapping. 
@@ -333,7 +370,7 @@ No.
 After filtering the lowly expressed genes, we were left with 15076 genes compared to the original 21283. A total of 6207 genes were removed. 
 
 ### How did you handle replicates?
-All replicates for each patient group and tissue were treated as separate samples. In the MDS plot, we can see that the samples mostly cluster together as tissues. Since we have multiple replicates for each patient group and tissue, we removed lowly expressed genes from these replicates.
+All replicates for each patient group and tissue were treated as separate samples. The replicates can be sorted by their `tissue` and their `patient_group`. In the MDS plot, we can see that the samples mostly cluster together as tissues. 
     
 ### What is the final coverage of your dataset?
 The final dataset is made up of:
@@ -344,6 +381,10 @@ The final dataset is made up of:
     
     - 2 patient groups *MS* and *CON*, and 2 tissues *GM*, *WM*.
     
-    - 11 replicates for WM in both patient groups.
+    - 10 MS patients and 11 CON
+    
+    - 10 replicates for WM in the MS group and 11 replicates in the CON group.
     
     - 5 replicates for GM in both patient groups.
+    
+# References
