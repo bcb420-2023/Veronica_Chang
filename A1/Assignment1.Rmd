@@ -1,16 +1,21 @@
 ---
-title: "BCB420 Assignment 1: Data set selection and initial processing."
+title: "BCB420 Assignment 1: Data set selection and initial processing"
 author: "Veronica Chang"
-date: "`r format(Sys.time(), '%d %b %Y')`"
+date: "r Sys.Date()"
 output:
   html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
     df_print: paged
 editor_options: 
   markdown: 
     wrap: sentence
 ---
 
-# Task 1: Install packages and select an expression data set.
+# Task 1: Install packages and select an expression data set
+
+## Packages
 
 ```{r, message=FALSE, warning=FALSE}
 
@@ -33,11 +38,10 @@ library("ggplot2")
 library("knitr")
 library("RSQLite")
 library("kableExtra")
-
-library(dplyr, warn.conflicts=FALSE)
 ```
 
-##Prepare the database
+
+## Prepare the database
 
 ```{r, message=FALSE, tidy=TRUE}
 # Check if it already exists
@@ -51,7 +55,9 @@ geoTables <- DBI::dbListTables(con)
 geoTables
 ```
 
+
 ##Query the database.
+
 I am looking for series related to the human autoimmune disease, lupus or SLE.
 Therefore, the organims should contain `Homo sapiens` and the title of the series should contain one of `autoimmune`, `lupus`.
 Technology should be `Highthroughoutput RNA sequencing` and was submitted within the past `10 years`.
@@ -81,7 +87,7 @@ knitr::kable(rs, format = "pipe")
 dim(rs)
 ```
 
-Selected the dataset **GSE111972**, description below
+### Selected the dataset **GSE111972**, description below
 ```{r, message=FALSE, tidy=TRUE}
 gseAccession <- "GSE111972"
 gse <- GEOquery::getGEO(gseAccession, GSEMatrix = FALSE)
@@ -89,8 +95,11 @@ gpl <- names(GEOquery::GPLList(gse))[1]
 gplInfo <- GEOquery::Meta(GEOquery::getGEO(gpl))
 ```
 
-# Task 2: Clean the data and map to HUGO symbols.
-##Fetch the data set.
+
+# Task 2: Clean the data and map to HUGO symbols
+
+## Fetch the data set
+
 ```{r, message=FALSE, tidy=TRUE}
 gseDir <- "/home/rstudio/projects/A1"
 if (! file.exists("~/projects/A1/GSE111972/GSE111972_norm_data.txt")) {
@@ -112,7 +121,8 @@ dim(expData)
 
 There are 32 columns, the first being the Gene ID. There are 21283 rows (genes) in this data set.
 
-##Define the groups:
+## Define the groups
+
 ```{r, tidy=TRUE}
 samples <- data.frame(lapply(colnames(expData)[2:32], 
         FUN=function(x){unlist(strsplit(x, 
@@ -124,12 +134,15 @@ samples
 ```
 
 ##Check for gene duplicates
+
 ```{r, tidy=TRUE}
 length(unique(expData$ID))
 !(length(unique(expData$ID)) == dim(expData)[1]) 
 ```
 
-There are no gene duplicates. Going to remove genes with low counts.
+There are no gene duplicates. 
+
+## Remove lowly expressed genes
 
 ```{r, message= FALSE, tidy=TRUE}
 cpms = cpm(expData[,2:32])
@@ -141,7 +154,9 @@ expDataFiltered = expData[keep,]
 ```
 
 ## Identifier mapping
-###Building a Biomart Query
+
+### Building a Biomart Query
+
 ```{r, message= FALSE, tidy=TRUE}
 listMarts()
 ensembl <- useMart("ensembl")
@@ -156,7 +171,9 @@ dim(listFilters(ensembl))
 knitr::kable(listFilters(ensembl)[1:10,1:2], type="html")
 biomart_human_filters <- listFilters(ensembl)
 ```
-###Attributes 
+
+### Attributes 
+
 ```{r, message= FALSE, tidy=TRUE}
 kable(searchAttributes(mart = ensembl, 'hgnc') , format="html") %>%
   row_spec(2, background = "yellow")
@@ -165,7 +182,8 @@ httr::set_config(httr::config(ssl_verifypeer = FALSE))
 ensembl <- biomaRt::useMart("ensembl", dataset="hsapiens_gene_ensembl")
 ```
 
-###Check 
+### Check
+
 ```{r, message= FALSE, tidy=TRUE}
 conversion_stash <- "geneIDConversion.rds"
 if (file.exists(conversion_stash)) {
@@ -184,8 +202,10 @@ not_hgnc <- expDataFiltered[-(which(rownames(keep) %in% geneIDConversion$hgnc_sy
 
 Seems like all genes are already annotated with HGNC symbols.
 
-# Task 3: Apply Normalization.
-##Check statistical summaries
+# Task 3: Apply Normalization
+
+## Check statistical summaries
+
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 summaryStats <- data.frame(apply(expDataFiltered[, 2:32], 2, summary))
 summaryStats
@@ -211,7 +231,7 @@ knitr::kable(summaryStats2, format = "html", col.names = colnames(summaryStats2)
 Means of the different groups are similar to each other for each tissue. This suggests that variations in gene counts can be attributed to biological variations rather than technical variations.
 
 
-##Check distribution:
+## Check distribution
 ```{r, message = FALSE, tidy=TRUE, warning=FALSE}
 tissueGroup <- as.factor(samples$tissue)
 tissueGroup <- c("grey", "white")[tissueGroup]
@@ -232,7 +252,8 @@ abline(h = median(apply(data2plot, 2, median)),
 # density plot
 counts_density <- apply(log2(cpm(expDataFiltered[,3:32])), 
                         2, density)
-#calculate the limits across all the samples
+
+# calculate  limits
   xlim <- 0; ylim <- 0
   for (i in 1:length(counts_density)) {
     xlim <- range(c(xlim, counts_density[[i]]$x)); 
@@ -240,34 +261,38 @@ counts_density <- apply(log2(cpm(expDataFiltered[,3:32])),
   }
   cols <- rainbow(length(counts_density))
   ltys <- rep(1, length(counts_density))
-#plot the first density plot to initialize the plot
+  
+# plot the first density plot to initialize 
 plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n", 
      ylab="Smoothing density of log2-CPM", 
      main="", cex.lab = 0.85)
-#plot each line
+
+# plot the lines
 for (i in 1:length(counts_density)) 
   lines(counts_density[[i]], col=cols[i], lty=ltys[i])
-#create legend
+
+# add legend
 legend("topright", colnames(data2plot),  
        col=cols, lty=ltys, cex=0.75, 
        border ="blue",  text.col = "green4", 
        merge = TRUE, bg = "gray90")
 ```
 
-##Apply TMM normalization
+## Apply TMM normalization
 ```{r, message = FALSE, tidy=TRUE}
 filteredData <-as.matrix(expDataFiltered[,2:32])
 rownames(filteredData) <- expDataFiltered$ID
 d <- edgeR::DGEList(counts=filteredData, group=samples$patients_group)
 ```
 
-##Calculate the normalization factor
+## Calculate the normalization factor
 ```{r, message = FALSE, tidy=TRUE}
 d <- calcNormFactors(d)
 expDataNorm <- cpm(d)
 ```
 
-##MDS plot
+## MDS plot
+
 Green = CON, Blue = MS
 
 ```{r eval=TRUE}
