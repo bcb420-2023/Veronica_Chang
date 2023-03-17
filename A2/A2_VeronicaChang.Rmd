@@ -13,6 +13,7 @@ editor_options:
     wrap: sentence
 bibliography: a2.bib
 ---
+
 # Introduction
 
 ## Background
@@ -24,14 +25,16 @@ bibliography: a2.bib
 ## Previous Analysis
 
 ## Packages
-* [BiocManager](https://CRAN.R-project.org/package=BiocManager) [@morgan2022]
-* [GEOmetadb](https://bioconductor.org/packages/release/bioc/html/GEOmetadb.html) [@zhu2008]
-* [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) [@smyth2015]
-* [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) [@robinson2010]
-* [biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) [@durinck2009]
-* [GEOquery](https://bioconductor.org/packages/release/bioc/html/GEOquery.html) [@davis2007]
-* [Biobase](https://bioconductor.org/packages/release/bioc/html/Biobase.html) [@huber2015]
-* [RColorBrewer](https://cran.r-project.org/package=RColorBrewer) [@neuwirth2022]
+
+-   [BiocManager](https://CRAN.R-project.org/package=BiocManager) [@morgan2022]
+-   [GEOmetadb](https://bioconductor.org/packages/release/bioc/html/GEOmetadb.html) [@zhu2008]
+-   [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) [@smyth2015]
+-   [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) [@robinson2010]
+-   [biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) [@durinck2009]
+-   [GEOquery](https://bioconductor.org/packages/release/bioc/html/GEOquery.html) [@davis2007]
+-   [Biobase](https://bioconductor.org/packages/release/bioc/html/Biobase.html) [@huber2015]
+-   [RColorBrewer](https://cran.r-project.org/package=RColorBrewer) [@neuwirth2022]
+
 ```{r, message=FALSE, warning=FALSE}
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -57,8 +60,12 @@ library("kableExtra")
 ```
 
 # Task 1: Differential Gene Expression
+
 ## Import data
-For our analysis in A1, we saved our data output to a .csv file. We will need to load the data file to use in our analysis for this assignment.
+
+For our analysis in A1, we saved our data output to a .csv file.
+We will need to load the data file to use in our analysis for this assignment.
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Load the data file
 counts <- read.csv(file = "~/projects/expDataNorm.csv", header = TRUE, row.names = 1)
@@ -69,11 +76,18 @@ head(counts)
 # Also loaded in the samples categories into a table
 expSamples <- read.csv("~/projects/expSamples.csv", header = TRUE)
 ```
-**Table 1.** First few rows of a table of the normalized data counts of the chosen gene set. There are `r nrow(counts)` genes from `r ncol(counts)` samples. Each gene has a unique HGNC symbol identifier. The samples can be divided into (1) `patient_group`, MS and CON, where MS includes the multiple sclerosis donor samples and CON is the non-neurological control donors, (2) `tissue`, GM and WM, where GM includes grey matter samples and WM includes white matter samples.
 
+**Table 1.** First few rows of a table of the normalized data counts of the chosen gene set.
+There are `r nrow(counts)` genes from `r ncol(counts)` samples.
+Each gene has a unique HGNC symbol identifier.
+The samples can be divided into (1) `patient_group`, MS and CON, where MS includes the multiple sclerosis donor samples and CON is the non-neurological control donors, (2) `tissue`, GM and WM, where GM includes grey matter samples and WM includes white matter samples.
 
 ## Design model
-We will be using the package `edgeR` for this assignment. edgeR uses a generalized linear model to test for differential expression of RNA-seq expression profiles. We need to consider how there are two major factors in our data set - `patient_group` and `tissue`. Ideally, we would account for both in our design model.
+
+We will be using the package `edgeR` for this assignment.
+edgeR uses a generalized linear model to test for differential expression of RNA-seq expression profiles.
+We need to consider how there are two major factors in our data set - `patient_group` and `tissue`.
+Ideally, we would account for both in our design model.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Define the groups 
@@ -88,9 +102,13 @@ DT::datatable(modelDesign[order(gsub("M[0-9]{2}\\.", "", rownames(modelDesign)))
               DT::formatStyle(names(modelDesign), fontSize = "10px")
 
 ```
-**Table 2.** Differential expression analysis model design, includes both `patient_group` and `tissue` as factors. 
 
-Since we are using `edgeR` for downstream analysis, we will first need to create a DGEList object, this will hold the dataset that will be analyzed by edgeR. We will also evaluate the dispersion. We will be using a Quasi-likelihood model as our dataset is of RNA-Seq data and Quasi-likelihood models are best suited. However, Quasi-likelihood models require that the data follows a negative binomial distribution.
+**Table 2.** Differential expression analysis model design, includes both `patient_group` and `tissue` as factors.
+
+Since we are using `edgeR` for downstream analysis, we will first need to create a DGEList object, this will hold the dataset that will be analyzed by edgeR.
+We will also evaluate the dispersion.
+We will be using a Quasi-likelihood model as our dataset is of RNA-Seq data and Quasi-likelihood models are best suited.
+However, Quasi-likelihood models require that the data follows a negative binomial distribution so will want to confirm whether our data set follows this.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Create DGEList
@@ -107,11 +125,21 @@ edgeR::plotMeanVar(dgeCounts,
                    show.binned.common.disp.vars = TRUE,
                    main = "Mean-Variance Plot for Normalized Data")
 ```
-**Figure 1.** Mean-variance relationship of normalized data. Dispersion estimation is done with the negative binomial model, which estimates the common, trended and tagwise dispersions across all tags. The grey and light blue points show the mean and pooled variance for each gene. The red crosses show binned variance, in which genes are grouped by mean level. The blue line indicates the common dispersion and is based on the negative binomial model. The black line displays the theoretical variance under the Poisson distribution model where the variance is equal to the mean. 
 
-In order to make accurate inferences about differential expression, we need to appropriately model the mean-variance relationship in DGEs. As we can see in Fig. 1, our normalized data set follows the negative binomial distribution. We can now verify that we can use a Quasi-likelihood model and fit our data to our model.
+**Figure 1.** Mean-variance relationship of normalized data.
+Dispersion estimation is done with the negative binomial model, which estimates the common, trended and tagwise dispersions across all tags.
+The grey and light blue points show the mean and pooled variance for each gene.
+The red crosses show binned variance, in which genes are grouped by mean level.
+The blue line indicates the common dispersion and is based on the negative binomial model.
+The black line displays the theoretical variance under the Poisson distribution model where the variance is equal to the mean.
+
+In order to make accurate inferences about differential expression, we need to appropriately model the mean-variance relationship in DGEs.
+As we can see in Fig.
+1, our normalized data set follows the negative binomial distribution.
+We can now verify that we can use a Quasi-likelihood model and fit our data to our model.
 
 ## Fit the data
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 fit <- edgeR::glmQLFit(dgeCounts, modelDesign)
 ```
@@ -119,12 +147,54 @@ fit <- edgeR::glmQLFit(dgeCounts, modelDesign)
 We have now fit our model and can move to differential expression analysis.
 
 ## MS vs CON
-We will be testing for differential expression between the MS and CON samples.
-```{r message = FALSE, tidy=TRUE, warning=FALSE}
 
+We will be testing for differential expression between the MS and CON samples.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Create a contrast for the patient groups GM
+contrast_gm <- limma::makeContrasts("groupsMS.GM - groupsCON.GM", 
+                                        levels = modelDesign)
+
+# Create a contrast for the patient groups WM
+contrast_wm <- limma::makeContrasts("groupsMS.WM - groupsCON.WM", 
+                                        levels = modelDesign)
+
+# Perform DE analysis
+qlf_gm <- edgeR::glmQLFTest(glmfit = fit, 
+                                  contrast = contrast_gm)
+
+qlf_wm <- edgeR::glmQLFTest(glmfit = fit, 
+                                  contrast = contrast_wm)
+
+# Extract the top DE hits ranked by p-value
+results_gm <- edgeR::topTags(qlf_gm, sort.by = "PValue", 
+                                   n = nrow(dgeCounts))$table
+
+results_wm <- edgeR::topTags(qlf_gm, sort.by = "PValue", 
+                                   n = nrow(dgeCounts))$table
 ```
+
+We can examine the DE genes pass the threshold and correction. We are using 0.05 as the threshold for the p-value by convention.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# DE genes of unadjusted p-value < 0.05
+sum(results_gm$PValue < 0.05)
+sum(results_wm$PValue < 0.05)
+
+# Check if there are any differences between the two tissues
+check <- results_wm == results_gm
+which(check == "FALSE")
+
+# No difference so 
+```
+
+The two results are actually the same. Will keep this in mind. 
+
+We now want to also adjust the p-values using the Benjamini-Hochberg method as we are doing multiple comparisons. This method assumes that the power to detect differential expression is equally likely among all the tests - reducing the false discovery rate.
+
 ## Global gene expression
-We can now generate a heat map, this is a data graph that will allow us to visualize global expression change over many samples. 
+
+We can now generate a heat map, this is a data graph that will allow us to visualize global expression change over many samples.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # First, as we have two groups for two factors, annotating the heat map will make it easier to read. 
