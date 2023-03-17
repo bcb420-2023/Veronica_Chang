@@ -55,6 +55,7 @@ library("circlize")
 library("RColorBrewer")
 library("ggplot2")
 library("knitr")
+library("ggrepel")
 library("RSQLite")
 library("kableExtra")
 ```
@@ -184,13 +185,160 @@ sum(results_wm$PValue < 0.05)
 # Check if there are any differences between the two tissues
 check <- results_wm == results_gm
 which(check == "FALSE")
-
-# No difference so 
 ```
 
-The two results are actually the same. Will keep this in mind. 
+The two results are actually the same. Will keep this in mind. We actually have a lot of DE genes with p-value < 0.05, we might want to consider bringing this p-value threshold down to 0.01.
+
+
+```{r tn_pval_stringent, message=FALSE}
+sum(results_gm$PValue < 0.01)
+sum(results_wm$PValue < 0.01)
+```
+
+## GM vs WM
+
+We will be testing for differential expression between the different tissues. 
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Create a contrast for the MS GM and WM
+contrast_ms <- limma::makeContrasts("groupsMS.GM - groupsMS.WM", 
+                                        levels = modelDesign)
+
+# Create a contrast for the CON GM and WM
+contrast_con <- limma::makeContrasts("groupsCON.GM - groupsCON.WM", 
+                                        levels = modelDesign)
+
+# Perform DE analysis
+qlf_ms <- edgeR::glmQLFTest(glmfit = fit, 
+                                  contrast = contrast_ms)
+
+qlf_con <- edgeR::glmQLFTest(glmfit = fit, 
+                                  contrast = contrast_con)
+
+# Extract the top DE hits ranked by p-value
+results_ms <- edgeR::topTags(qlf_ms, sort.by = "PValue", 
+                                   n = nrow(dgeCounts))$table
+
+results_con <- edgeR::topTags(qlf_con, sort.by = "PValue", 
+                                   n = nrow(dgeCounts))$table
+```
+
+We can examine the DE genes pass the threshold and correction. We are using 0.05 as the threshold for the p-value by convention.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# DE genes of unadjusted p-value < 0.05
+sum(results_ms$PValue < 0.05)
+sum(results_con$PValue < 0.05)
+```
+
+Interestingly, there are differences between the tissues for each patient group. There are many genes so we will also bring the p-value threshold down to 0.01 for this comparison. 
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# DE genes of unadjusted p-value < 0.01
+sum(results_ms$PValue < 0.01)
+sum(results_con$PValue < 0.01)
+```
+
+Since there are many genes for both comparisons, we will also be filtering out genes based on log fold change (log-FC) later in this analysis.
+
+### Volcano plot MS vs CON
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Label genes
+results_gm <- results_gm %>%
+    dplyr::mutate(Expression = dplyr::case_when(
+                        logFC > 0 & FDR < 0.05 ~ "Up-regulated",
+                        logFC < 0 & FDR < 0.05 ~ "Down-regulated",
+                        TRUE ~ "Not DE"))
+
+# Plot volcano plot
+ggplot2::ggplot(results_gm, aes(logFC, -log(FDR, 10))) +
+    ggplot2::geom_point(aes(color = Expression), size = 2/5) +
+    xlab(expression("log"[2]*"FC")) + 
+    ylab(expression("-log"[10]*"FDR")) + 
+    ggplot2::scale_color_manual(values = c("Up-regulated" = "firebrick3", 
+                                           "Down-regulated" = "dodgerblue3", 
+                                           "Not DE" = "gray50")) +
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size=1.5))) +
+    ggrepel::geom_label_repel(data = results_gm, 
+                        mapping = aes(logFC, -log(FDR, 10), label = rownames(results_gm)),
+                        size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
+
+
+# Label genes
+results_wm <- results_wm %>%
+    dplyr::mutate(Expression = dplyr::case_when(
+                        logFC > 0 & FDR < 0.05 ~ "Up-regulated",
+                        logFC < 0 & FDR < 0.05 ~ "Down-regulated",
+                        TRUE ~ "Not DE"))
+
+# Plot volcano plot
+ggplot2::ggplot(results_wm, aes(logFC, -log(FDR, 10))) +
+    ggplot2::geom_point(aes(color = Expression), size = 2/5) +
+    xlab(expression("log"[2]*"FC")) + 
+    ylab(expression("-log"[10]*"FDR")) + 
+    ggplot2::scale_color_manual(values = c("Up-regulated" = "firebrick3", 
+                                           "Down-regulated" = "dodgerblue3", 
+                                           "Not DE" = "gray50")) +
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size=1.5))) +
+    ggrepel::geom_label_repel(data = results_wm, 
+                        mapping = aes(logFC, -log(FDR, 10), label = rownames(results_wm)),
+                        size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
+
+```
+
+There are only a few DE genes and all of them are up-regulated in MS patients for each tissue. The gene with the greatest logFC is `ELK2AP` with a logFC of `10.7060661`.
+
+### Volcano plot GM vs WM
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Label genes
+results_ms <- results_ms %>%
+    dplyr::mutate(Expression = dplyr::case_when(
+                        logFC > 0 & FDR < 0.05 ~ "Up-regulated",
+                        logFC < 0 & FDR < 0.05 ~ "Down-regulated",
+                        TRUE ~ "Not DE"))
+
+# Plot volcano plot
+ggplot2::ggplot(results_ms, aes(logFC, -log(FDR, 10))) +
+    ggplot2::geom_point(aes(color = Expression), size = 2/5) +
+    xlab(expression("log"[2]*"FC")) + 
+    ylab(expression("-log"[10]*"FDR")) + 
+    ggplot2::scale_color_manual(values = c("Up-regulated" = "firebrick3", 
+                                           "Down-regulated" = "dodgerblue3", 
+                                           "Not DE" = "gray50")) +
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size=1.5))) +
+    ggrepel::geom_label_repel(data = results_ms, 
+                        mapping = aes(logFC, -log(FDR, 10), label = rownames(results_ms)),
+                        size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
+legend("topright", legend=c("Downregulated in MS","Upregulated in MS", "Not significant"),fill = c("dodgerblue3", "firebrick3", "gray50"), cex = 0.5)
+
+
+# Label genes
+results_con <- results_con %>%
+    dplyr::mutate(Expression = dplyr::case_when(
+                        logFC > 0 & FDR < 0.05 ~ "Up-regulated",
+                        logFC < 0 & FDR < 0.05 ~ "Down-regulated",
+                        TRUE ~ "Not DE"))
+
+# Plot volcano plot
+ggplot2::ggplot(results_wm, aes(logFC, -log(FDR, 10))) +
+    ggplot2::geom_point(aes(color = Expression), size = 2/5) +
+    xlab(expression("log"[2]*"FC")) + 
+    ylab(expression("-log"[10]*"FDR")) + 
+    ggplot2::scale_color_manual(values = c("Up-regulated" = "firebrick3", 
+                                           "Down-regulated" = "dodgerblue3", 
+                                           "Not DE" = "gray50")) +
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size=1.5))) +
+    ggrepel::geom_label_repel(data = results_con, 
+                        mapping = aes(logFC, -log(FDR, 10), label = rownames(results_con)),
+                        size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
+legend("topright", legend=c("Downregulated in MS","Upregulated in MS", "Not significant"),fill = c("dodgerblue3", "firebrick3", "gray50"), cex = 0.5)
+
+```
 
 We now want to also adjust the p-values using the Benjamini-Hochberg method as we are doing multiple comparisons. This method assumes that the power to detect differential expression is equally likely among all the tests - reducing the false discovery rate.
+
 
 ## Global gene expression
 
