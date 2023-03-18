@@ -88,7 +88,7 @@ The samples can be divided into (1) `patient_group`, MS and CON, where MS includ
 We will be using the package `edgeR` for this assignment.
 edgeR uses a generalized linear model to test for differential expression of RNA-seq expression profiles.
 We need to consider how there are two major factors in our data set - `patient_group` and `tissue`.
-Ideally, we would account for both in our design model.
+Ideally, we would account for both in our design model. We already defined a group that has both of these factors in A1. 
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Define the groups 
@@ -114,6 +114,8 @@ However, Quasi-likelihood models require that the data follows a negative binomi
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Create DGEList
 dgeCounts <- edgeR::DGEList(counts = counts, group = groups)
+dgeCounts <- edgeR::calcNormFactors(counts_dge)
+dgeCountsAll <- edgeR::cpm(counts_dge)
 
 # Check dispersion 
 dgeCounts <- edgeR::estimateDisp(dgeCounts, modelDesign)
@@ -149,7 +151,7 @@ We have now fit our model and can move to differential expression analysis.
 
 ## MS vs CON
 
-We will be testing for differential expression between the MS and CON samples.
+We will be testing for differential expression between the MS and CON samples for each tissue
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Create a contrast for the patient groups GM
@@ -175,7 +177,8 @@ results_wm <- edgeR::topTags(qlf_gm, sort.by = "PValue",
                                    n = nrow(dgeCounts))$table
 ```
 
-We can examine the DE genes pass the threshold and correction. We are using 0.05 as the threshold for the p-value by convention.
+We can examine the DE genes pass the threshold and correction.
+We are using 0.05 as the threshold for the p-value by convention.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # DE genes of unadjusted p-value < 0.05
@@ -187,8 +190,9 @@ check <- results_wm == results_gm
 which(check == "FALSE")
 ```
 
-The two results are actually the same. Will keep this in mind. We actually have a lot of DE genes with p-value < 0.05, we might want to consider bringing this p-value threshold down to 0.01.
-
+The two results are actually the same.
+Will keep this in mind.
+We actually have a lot of DE genes with p-value \< 0.05, we might want to consider bringing this p-value threshold down to 0.01.
 
 ```{r tn_pval_stringent, message=FALSE}
 sum(results_gm$PValue < 0.01)
@@ -197,7 +201,7 @@ sum(results_wm$PValue < 0.01)
 
 ## GM vs WM
 
-We will be testing for differential expression between the different tissues. 
+We will be testing for differential expression between the different tissues for each patient group.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Create a contrast for the MS GM and WM
@@ -223,7 +227,8 @@ results_con <- edgeR::topTags(qlf_con, sort.by = "PValue",
                                    n = nrow(dgeCounts))$table
 ```
 
-We can examine the DE genes pass the threshold and correction. We are using 0.05 as the threshold for the p-value by convention.
+We can examine the DE genes pass the threshold and correction.
+We are using 0.05 as the threshold for the p-value by convention.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # DE genes of unadjusted p-value < 0.05
@@ -231,7 +236,8 @@ sum(results_ms$PValue < 0.05)
 sum(results_con$PValue < 0.05)
 ```
 
-Interestingly, there are differences between the tissues for each patient group. There are many genes so we will also bring the p-value threshold down to 0.01 for this comparison. 
+Interestingly, there are differences between the tissues for each patient group.
+There are many genes so we will also bring the p-value threshold down to 0.01 for this comparison.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # DE genes of unadjusted p-value < 0.01
@@ -286,8 +292,10 @@ ggplot2::ggplot(results_wm, aes(logFC, -log(FDR, 10))) +
                         size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
 
 ```
+**Figure 2.** Volcano plot of differentially expressed genes comparing (A) MS and CON patients in grey matter tissue samples, and (B) MS and CON patients in white matter tissue samples. Differentially expressed genes are coloured based on whether they are up- or down-regulated. Genes were selected when FDR < 0.05 AND logFC > 0 for up-regulated OR logFC < 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
 
-There are only a few DE genes and all of them are up-regulated in MS patients for each tissue. The gene with the greatest logFC is `ELK2AP` with a logFC of `10.7060661`.
+There are only a few DE genes (4 genes) and all of them are up-regulated in MS patients for each tissue.
+The gene with the greatest logFC is `ELK2AP` with a logFC of `10.7060661`.
 
 ### Volcano plot GM vs WM
 
@@ -311,7 +319,6 @@ ggplot2::ggplot(results_ms, aes(logFC, -log(FDR, 10))) +
     ggrepel::geom_label_repel(data = results_ms, 
                         mapping = aes(logFC, -log(FDR, 10), label = rownames(results_ms)),
                         size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
-legend("topright", legend=c("Downregulated in MS","Upregulated in MS", "Not significant"),fill = c("dodgerblue3", "firebrick3", "gray50"), cex = 0.5)
 
 
 # Label genes
@@ -333,38 +340,51 @@ ggplot2::ggplot(results_wm, aes(logFC, -log(FDR, 10))) +
     ggrepel::geom_label_repel(data = results_con, 
                         mapping = aes(logFC, -log(FDR, 10), label = rownames(results_con)),
                         size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
-legend("topright", legend=c("Downregulated in MS","Upregulated in MS", "Not significant"),fill = c("dodgerblue3", "firebrick3", "gray50"), cex = 0.5)
 
 ```
+**Figure 3.** Volcano plot of differentially expressed genes comparing (A) grey matter and white matter tissues in MS patients, and (B) grey matter and white matter tissues in CON patients. Differentially expressed genes are coloured based on whether they are up- or down-regulated. Genes were selected when FDR < 0.05 AND logFC > 0 for up-regulated OR logFC < 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
 
-We now want to also adjust the p-values using the Benjamini-Hochberg method as we are doing multiple comparisons. This method assumes that the power to detect differential expression is equally likely among all the tests - reducing the false discovery rate.
-
+For the MS patients, the most up-regulated gene was `SNAP25` with a logFC of `6.482862` and the most down-regulated gene was `GABRG1` with a logFC of `-7.035827`. For the CON patients, the most up-regulated gene was `MMP25` with a logFC of `5.341661` and the most down-regulated gene was `SPAG17` with a logFC of `-7.424698`.
 
 ## Global gene expression
 
-We can now generate a heat map, this is a data graph that will allow us to visualize global expression change over many samples.
+We can better visualize global expression change over our samples with a heat map. In this heatmap, all the groups - CON GM, CON WM, MS GM, MS WM will be compared against each other. 
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
-# First, as we have two groups for two factors, annotating the heat map will make it easier to read. 
-# In A1, I already defined a colour scheme for the groups, as below:
-colTissue <- as.factor(expSamples$tissue)
-colTissue <- c("grey", "white")[colTissue]
-colPatient <- as.factor(expSamples$patient_group)
-colPatient <- c("forestgreen", "dodgerblue")[colPatient]
+# Create a heat map matrix to scale counts to CPM
+hmapMatrix <- dgeCountsAll
+rownames(hmapMatrix) <- rownames(dgeCountsAll)
+colnames(hmapMatrix) <- colnames(dgeCountsAll)
+hmapMatrix <-  dgeCountsAll %>% t() %>% scale() %>% t()
 
-# This is another one for a combination of tissue and patient_group, group
-colGroup <- as.factor(expSamples$group)
-levels(colGroup) <-  brewer.pal(nlevels(colGroup), "Spectral")
-colGroup <- as.character(colGroup)
+# In A1, I already defined a colour annotation for the groups, as below:
+annoCol <- brewer.pal(4, "Spectral")
+names(annoCol) <- c("CON GM", "CON WM", "MS GM", "MS WM")
+annoCol <- list(group = annoCol)
 
-# Creating an annotation data frame
-dfAnnotation <- data.frame(tissue = countsMatrix$tissue,
-                      patient_group = countsMatrix$patient_group)
-colAnnotation <- list(tissue = colTissue, patient_group = colPatient)
+# Make annotation dataframe 
+annoDF <- data.frame(group = expSamples$group)
 
-# Heat map annotation
-hmapAnnotation <- ComplexHeatmap::HeatmapAnnotation(
-                    df = dfAnnotation,
-                    col = colAnnotation)
+# Create the heat map annotation
+hmapAnno <- ComplexHeatmap::HeatmapAnnotation(
+                    df = annoDF,
+                    col = annoCol)
 
+# Check range of heat map matrix and set colour
+hmapRange <- range(heatmapMatrix)
+hmapCol <- circlize::colorRamp2(c(hmapRange[1], 0, hmapRange[2]), 
+                                 c("blue", "white", "red"))
+
+# Create heat map
+hmapDEG <- ComplexHeatmap::Heatmap(heatmapMatrix,
+                                    show_row_dend = FALSE,
+                                    show_column_dend = FALSE,
+                                    show_column_names = TRUE,
+                                    show_row_names = FALSE,
+                                    cluster_columns = TRUE,
+                                    col = hmapCol,
+                                    top_annotation = hmapAnno) 
 ```
+
+We now want to also adjust the p-values using the Benjamini-Hochberg method as we are doing multiple comparisons.
+This method assumes that the power to detect differential expression is equally likely among all the tests - reducing the false discovery rate.
