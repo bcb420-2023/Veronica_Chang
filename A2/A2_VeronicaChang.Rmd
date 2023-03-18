@@ -120,7 +120,6 @@ dgeCounts <- edgeR::DGEList(counts = counts, group = groups)
 keep.exprs <- filterByExpr(dgeCounts, group = groups)
 dgeCounts <- dgeCounts[keep.exprs,, keep.lib.sizes=FALSE]
 dgeCounts <- edgeR::calcNormFactors(dgeCounts)
-dgeCPM <- edgeR::cpm(counts_dge)
 
 # Check dispersion 
 dgeCounts <- edgeR::estimateDisp(dgeCounts, modelDesign)
@@ -387,4 +386,17 @@ draw(hmapDEG,
 
 
 
-# Thresholded Overrepresentation Analysis using g:Profiler
+# Task 2: Thresholded Overrepresentation Analysis using g:Profiler
+### 1. Which method did you choose and why?
+
+### 2. What annotation data did you use and why? What version of the annotation are you using?
+
+### 3. How many genesets were returned with what thresholds?
+
+### 4. Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
+
+# Task 3: Interpretation
+### 1. Do the over-representation results support conclusions or mechanism discussed in the original paper?
+
+### 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
+
