@@ -312,7 +312,8 @@ ggplot2::ggplot(results_con, aes(logFC, -log(FDR, 10))) +
                         size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
 
 ```
-**Figure 2.** Volcano plot of differentially expressed genes comparing (A) grey matter and white matter tissues in MS patients, and (B) grey matter and white matter tissues in CON patients. Differentially expressed genes are coloured based on whether they are up- or down-regulated. Genes were selected when FDR < 0.05 AND logFC > 0 for up-regulated OR logFC < 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
+
+**Figure 2.** Volcano plot of differentially expressed genes comparing **(A)** grey matter and white matter tissues in MS patients, and **(B)** grey matter and white matter tissues in CON patients. Differentially expressed genes are coloured based on whether they are up- or down-regulated. Genes were selected when FDR < 0.05 AND logFC > 0 for up-regulated OR logFC < 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
 
 For the MS patients, the most up-regulated gene was `SNAP25` with a logFC of `6.482862` and the most down-regulated gene was `CNTN2` with a logFC of `-6.641904`. For the CON patients, the most up-regulated gene was `FPR2` with a logFC of `3.2941815` and the most down-regulated gene was `CFAP43` with a logFC of `-7.137068`.
 
@@ -365,6 +366,7 @@ draw(hmapDEG,
    column_title_gp=grid::gpar(fontsize=12))
 
 ```
+
 **Figure 3.** Heat map of global gene expression across all samples. Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right. The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated. Values were converted from counts to CPM and scaled. The samples were also hierarchically clustered by their expression (dendrograms were excluded to keep the figure neat).
 
 ## Differential Expression Analysis Discussion
@@ -400,3 +402,4 @@ draw(hmapDEG,
 
 ### 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
 
+#References
