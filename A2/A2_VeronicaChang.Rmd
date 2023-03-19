@@ -17,12 +17,34 @@ bibliography: a2.bib
 # Introduction
 
 ## Background
+Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease. MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS). Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences. Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes. Their role in MS is complex and controversial [@luo2017]. In this paper by van der Poel et. al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples. From each sample, the total RNA was extracted [@vanderPoel2019]. 
 
 ## Objectives
+The authors isolated human microglia according to the previously described general experimental design. They suggest that pathological changes in MS tissue may be associated with changes in microglia, leading to lesion initiation. The authors wanted to analyze the transcriptional profile of microglia in the collected samples by RNA-sequencing [@luo2017]. Ultimately, they wanted to discover MS-related changes in microglia between the GM and WM brain regions.
 
 ## Dataset
+After our previous analysis, the final dataset was made up of:
+The final dataset is made up of:
+
+    - `r nrow(expDataNorm)` with unique identifiers
+    
+    - 31 samples in total
+    
+    - 2 patient groups *MS* and *CON*, and 2 tissues *GM*, *WM*
+    
+    - 10 MS patients and 11 CON
+    
+    - 10 replicates for WM in the MS group and 11 replicates in the CON group
+    
+    - 5 replicates for GM in both patient groups.
 
 ## Previous Analysis
+In the previous assignment, A1, we used the dataset ID [GSE111972](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE111972), from the publication "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes" by van der Poel et. al (@vanderPoel2019). In A1, we conducted data cleaning, normalization, gene mapping, and preliminary analysis. We filtered out the lowly expressed genes and were left with 15076 genes compared to the original 21283. A total of 6207 genes were removed. The number of genes did not change after normalization. Genes were already mapped to HUGO gene symbols. When we generated a MDS plot post-normalization, we saw that the tissues GM and WM clustered relatively well with each other regardless of which patient group they were obtained from.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::include_graphics("~/projects/A2/figures/a1_mdsplot.png")
+```
+
 
 ## Packages
 
@@ -46,9 +68,9 @@ library("BiocManager")
 library("GEOmetadb")
 library("limma")
 library("edgeR")
+library("biomaRt")
 library("dplyr")
 library("Biobase")
-library("biomaRt")
 library("GEOquery")
 library("ComplexHeatmap")
 library("circlize")
@@ -77,12 +99,13 @@ head(counts)
 # Also loaded in the samples categories into a table
 expSamples <- read.csv("~/projects/expSamples.csv", header = TRUE)
 ```
-
+<br>
 **Table 1.** First few rows of a table of the normalized data counts of the chosen gene set.
 There are `r nrow(counts)` genes from `r ncol(counts)` samples.
 Each gene has a unique HGNC symbol identifier.
 The samples can be divided into (1) `patient_group`, MS and CON, where MS includes the multiple sclerosis donor samples and CON is the non-neurological control donors, (2) `tissue`, GM and WM, where GM includes grey matter samples and WM includes white matter samples.
 
+<br>
 ## Design model
 
 We will be using the package `edgeR` for this assignment.
@@ -104,9 +127,10 @@ DT::datatable(modelDesign[order(gsub("M[0-9]{2}\\.", "", rownames(modelDesign)))
               DT::formatStyle(names(modelDesign), fontSize = "10px")
 
 ```
-
+<br>
 **Table 2.** Differential expression analysis model design, includes both `patient_group` and `tissue` as factors.
 
+<br>
 Since we are using `edgeR` for downstream analysis, we will first need to create a DGEList object, this will hold the dataset that will be analyzed by edgeR.
 We will also evaluate the dispersion.
 We will be using a Quasi-likelihood model as our dataset is of RNA-Seq data and Quasi-likelihood models are best suited.
@@ -132,7 +156,7 @@ edgeR::plotMeanVar(dgeCounts,
                    show.binned.common.disp.vars = TRUE,
                    main = "Mean-Variance Plot for Normalized Data")
 ```
-
+<br>
 **Figure 1.** Mean-variance relationship of normalized data.
 Dispersion estimation is done with the negative binomial model, which estimates the common, trended and tagwise dispersions across all tags.
 The grey and light blue points show the mean and pooled variance for each gene.
@@ -140,10 +164,12 @@ The red crosses show binned variance, in which genes are grouped by mean level.
 The blue line indicates the common dispersion and is based on the negative binomial model.
 The black line displays the theoretical variance under the Poisson distribution model where the variance is equal to the mean.
 
+<br>
 In order to make accurate inferences about differential expression, we need to appropriately model the mean-variance relationship in DEGs.
 As we can see in Fig.
 1, our normalized data set follows the negative binomial distribution.
 We can now verify that we can use a Quasi-likelihood model and fit our data to our model.
+
 
 ## Fit the data
 
@@ -152,6 +178,7 @@ fit <- edgeR::glmQLFit(dgeCounts, modelDesign)
 ```
 
 We have now fit our model and can move to differential expression analysis.
+
 
 ## MS vs CON
 
@@ -208,6 +235,7 @@ sum(results_gm$FDR < 0.05)
 sum(results_wm$FDR < 0.05)
 ```
 Interestingly, there are not many DE genes for the GM comparison - only 4 and all of them are up-regulated. For the WM comparison, there are none. This makes sense as in the MDS we obtained from A1, we saw that the samples cluster together by tissue despite the patient group. From now on, our analysis will be focused on comparing the GM and WM in the two patient groups. 
+
 
 ## GM vs WM
 
@@ -278,7 +306,8 @@ results_ms <- results_ms %>%
                         TRUE ~ "Not DE"))
 
 # Plot volcano plot
-ggplot2::ggplot(results_ms, aes(logFC, -log(FDR, 10))) +
+ggplot2::ggplot(results_ms, aes(logFC, -log(FDR, 10))) + labs(title = "A. Volcano plot of differentially expressed genes in grey matter and 
+white matter tissues in MS patients") +
     ggplot2::geom_point(aes(color = Expression), size = 2/5) +
     xlab(expression("log"[2]*"FC")) + 
     ylab(expression("-log"[10]*"FDR")) + 
@@ -299,7 +328,8 @@ results_con <- results_con %>%
                         TRUE ~ "Not DE"))
 
 # Plot volcano plot
-ggplot2::ggplot(results_con, aes(logFC, -log(FDR, 10))) +
+ggplot2::ggplot(results_con, aes(logFC, -log(FDR, 10))) + labs(title = "B. Volcano plot of differentially expressed genes in grey matter and 
+white matter tissues in CON patients") +
     ggplot2::geom_point(aes(color = Expression), size = 2/5) +
     xlab(expression("log"[2]*"FC")) + 
     ylab(expression("-log"[10]*"FDR")) + 
@@ -312,12 +342,14 @@ ggplot2::ggplot(results_con, aes(logFC, -log(FDR, 10))) +
                         size = 2.5, color = "black", nudge_x = 0.1, nudge_y = 0.1)
 
 ```
-
+<br>
 **Figure 2.** Volcano plot of differentially expressed genes comparing **(A)** grey matter and white matter tissues in MS patients, and **(B)** grey matter and white matter tissues in CON patients. Differentially expressed genes are coloured based on whether they are up- or down-regulated. Genes were selected when FDR < 0.05 AND logFC > 0 for up-regulated OR logFC < 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
 
+<br>
 For the MS patients, the most up-regulated gene was `SNAP25` with a logFC of `6.482862` and the most down-regulated gene was `CNTN2` with a logFC of `-6.641904`. For the CON patients, the most up-regulated gene was `FPR2` with a logFC of `3.2941815` and the most down-regulated gene was `CFAP43` with a logFC of `-7.137068`.
 
-## Global gene expression
+
+## Heat map
 
 We can better visualize global expression change over our samples with a heat map. In this heatmap, all the groups - CON GM, CON WM, MS GM, MS WM will be compared against each other. 
 
@@ -366,28 +398,39 @@ draw(hmapDEG,
    column_title_gp=grid::gpar(fontsize=12))
 
 ```
-
+<br>
 **Figure 3.** Heat map of global gene expression across all samples. Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right. The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated. Values were converted from counts to CPM and scaled. The samples were also hierarchically clustered by their expression (dendrograms for both rows and columns were excluded to keep the figure neat).
 
-## Differential expression analysis Discussion
+<br>
+## Differential expression analysis discussion
 
 ### 1. Calculate p-values for each of the genes in your expression set. How many genes were significantly differentially expressed? What thresholds did you use and why?
+I first used the conventionally used p-value of 0.05 for both sets of analysis. This resulted to `572` genes that were differentially expressed in `GM` between MS and CON, and `729` genes that were differentially expressed in `WM` between MS and CON. The comparison of the two tissues, GM and WM, resulted to `3042` genes that were differentially expressed in `MS` patients, and `2901` genes that were differentially expressed in `CON` patients. Since there were still many genes, I reduced the p-value to 0.01. This decreased the number of DE genes to `113`, `176`, `1621`, and `1498` respectively. 
 
-
-
+<br>
 ### 2. Multiple hypothesis testing - correct your p-values using a multiple hypothesis correction method. Which method did you use? And Why? How many genes passed correction?
+We used the Benjamini-Hochberg correction. Benjamini-Hochberg differs from Bonferroni in that it limits the False Discovery Rate (FDR). We assume that the power to detect differential expression is equally likely among all the tests - reducing the false discovery rate. Additionally, Bonferroni can become conservative as the number of comparisons increases so this method is not ideal for the number of samples we have. This correction was already done before we found the number of DE genes so the numbers mentioned in Q1 covers the number of genes that passed correction after changing the p-value.
 
-
-
+<br>
 ### 3. Show the amount of differentially expressed genes using an MA Plot or a Volcano plot. Highlight genes of interest.
+Volcano plot for MS and CON patients with the comparison of GM vs WM tissue samples. The top DE genes are labelled for each plot. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::include_graphics("~/projects/A2/figures/a2_volcanoms.png")
+```
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::include_graphics("~/projects/A2/figures/a2_volcanocon.png")
+```
 
+For the MS patients, the most up-regulated gene was `SNAP25` with a logFC of `6.482862` and the most down-regulated gene was `CNTN2` with a logFC of `-6.641904`. For the CON patients, the most up-regulated gene was `FPR2` with a logFC of `3.2941815` and the most down-regulated gene was `CFAP43` with a logFC of `-7.137068`. 
 
-
+<br>
 ### 4. Visualize your top hits using a heatmap. Do your conditions cluster together? Explain why or why not.
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::include_graphics("~/projects/A2/figures/a2_heatmap.png")
+```
+For both patient groups, we can see similarities in the genes that down- and up-regulated, i.e. genes that are up-regulated in GM in CON patients will be up-regulated in MS patients. This relates to what we saw in our MDS plot from A1 that was shown in the introduction section of this assignment. Samples of the same tissue cluster regardless of patient group. 
 
-
-
-
+<br>
 # Task 2: Thresholded Overrepresentation Analysis using g:Profiler
 For this part of the assignment, we will be doing a thresholded over-representation analysis with g:Profiler. 
 
@@ -423,8 +466,11 @@ msUpTopTerms <- data.frame(
 # Visualize our results
 knitr::kable(head(msUpTopTerms, 10), format = "html")
 ```
+<br>
+
 **Table 2.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 Number of terms:
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 length(msUpTopTerms$term_name)
@@ -437,8 +483,11 @@ knitr::kable(rbind(msUpTopTerms[msUpTopTerms$source == "GO:BP",][1,],
                    msUpTopTerms[msUpTopTerms$source == "WP",][1,]),
              format = "html")
 ```
+<br>
+
 **Table 3.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 ### Down-regulated
 Now, do the same for the down-regulated genes.
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -462,8 +511,11 @@ msDownTopTerms <- data.frame(
 # Visualize our results
 knitr::kable(head(msDownTopTerms, 10), format = "html")
 ```
+<br>
+
 **Table 4.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 Number of terms:
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 length(msDownTopTerms$term_name)
@@ -476,9 +528,11 @@ knitr::kable(rbind(msDownTopTerms[msDownTopTerms$source == "GO:BP",][1,],
                    msDownTopTerms[msDownTopTerms$source == "WP",][1,]),
              format = "html")
 ```
+<br>
+
 **Table 5.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
-
+<br>
 ### All DE genes
 We will now be looking at all the differentially expressed genes as a whole. 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -502,8 +556,11 @@ msAllTopTerms <- data.frame(
 # Visualize our results
 knitr::kable(head(msAllTopTerms, 10), format = "html")
 ```
+<br>
+
 **Table 6.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 Number of terms:
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 length(msAllTopTerms$term_name)
@@ -516,8 +573,11 @@ knitr::kable(rbind(msAllTopTerms[msAllTopTerms$source == "GO:BP",][1,],
                    msAllTopTerms[msAllTopTerms$source == "WP",][1,]),
              format = "html")
 ```
+<br>
+
 **Table 7.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 ## CON GM vs WM
 We will be doing the same analysis for the CON patient group.
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -551,8 +611,11 @@ conUpTopTerms <- data.frame(
 # Visualize our results
 knitr::kable(head(conUpTopTerms, 10), format = "html")
 ```
+<br>
+
 **Table 8.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 Number of terms:
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 length(conUpTopTerms$term_name)
@@ -565,10 +628,14 @@ knitr::kable(rbind(conUpTopTerms[conUpTopTerms$source == "GO:BP",][1,],
                    conUpTopTerms[conUpTopTerms$source == "WP",][1,]),
              format = "html")
 ```
+<br>
+
 **Table 9.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 Interestingly, there are 0 terms for the WP source. 
 
+<br>
 ### Down-regulated
 Now, do the same for the down-regulated genes.
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -592,9 +659,11 @@ conDownTopTerms <- data.frame(
 # Visualize our results
 knitr::kable(head(conDownTopTerms, 10), format = "html")
 ```
+<br>
+
 **Table 10.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
-
+<br>
 Number of terms:
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 length(conDownTopTerms$term_name)
@@ -607,7 +676,10 @@ knitr::kable(rbind(conDownTopTerms[conDownTopTerms$source == "GO:BP",][1,],
                    conDownTopTerms[conDownTopTerms$source == "WP",][1,]),
              format = "html")
 ```
+<br>
+
 **Table 11.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
 
 As we saw earlier from the up-regulated analysis for the CON samples, the WP source had 0 terms. We have a top term from WP in the down-regaulted genes as seen in Table 9. We can check this out.
 
@@ -615,8 +687,11 @@ As we saw earlier from the up-regulated analysis for the CON samples, the WP sou
 knitr::kable(head(conDownTopTerms[conDownTopTerms$source == "WP",], 10), format = "html")
 nrow(conDownTopTerms[conDownTopTerms$source == "WP",])
 ```
+<br>
+
 **Table 12.** The top 10 terms from WP for the down-regulated genes in GM vs WM tissues in the CON patient group. 
 
+<br>
 ### All DE genes
 We will now be looking at all the differentially expressed genes as a whole. 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -640,8 +715,11 @@ conAllTopTerms <- data.frame(
 # Visualize our results
 knitr::kable(head(conAllTopTerms, 10), format = "html")
 ```
+<br>
+
 **Table 13.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
+<br>
 Number of terms:
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 length(conAllTopTerms$term_name)
@@ -654,20 +732,29 @@ knitr::kable(rbind(conAllTopTerms[conAllTopTerms$source == "GO:BP",][1,],
                    conAllTopTerms[conAllTopTerms$source == "WP",][1,]),
              format = "html")
 ```
+<br>
+
 **Table 14.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
 
-## Thresholded over-representation analysis Discussion
+<br>
+## Thresholded over-representation analysis discussion
 ### 1. Which method did you choose and why?
 
+<br>
 ### 2. What annotation data did you use and why? What version of the annotation are you using?
 
+<br>
 ### 3. How many genesets were returned with what thresholds?
 
+<br>
 ### 4. Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
 
+<br>
 # Task 3: Interpretation
 ### 1. Do the over-representation results support conclusions or mechanism discussed in the original paper?
 
+<br>
 ### 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
 
+<br>
 # References
