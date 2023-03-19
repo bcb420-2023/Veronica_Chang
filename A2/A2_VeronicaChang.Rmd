@@ -1,7 +1,7 @@
 ---
 title: "BCB420 Assignment 2: Differential Gene Expression Analysis and Preliminary ORA"
 author: "Veronica Chang"
-date: "February 14th, 2023"
+date: "March 14th, 2023"
 output:
   html_document:
     toc: true
@@ -267,7 +267,7 @@ sum(results_ms$FDR < 0.01)
 sum(results_con$FDR < 0.01)
 ```
 
-### Volcano plot GM vs WM
+## Volcano plot GM vs WM
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Label genes
@@ -367,9 +367,9 @@ draw(hmapDEG,
 
 ```
 
-**Figure 3.** Heat map of global gene expression across all samples. Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right. The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated. Values were converted from counts to CPM and scaled. The samples were also hierarchically clustered by their expression (dendrograms were excluded to keep the figure neat).
+**Figure 3.** Heat map of global gene expression across all samples. Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right. The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated. Values were converted from counts to CPM and scaled. The samples were also hierarchically clustered by their expression (dendrograms for both rows and columns were excluded to keep the figure neat).
 
-## Differential Expression Analysis Discussion
+## Differential expression analysis Discussion
 
 ### 1. Calculate p-values for each of the genes in your expression set. How many genes were significantly differentially expressed? What thresholds did you use and why?
 
@@ -389,6 +389,274 @@ draw(hmapDEG,
 
 
 # Task 2: Thresholded Overrepresentation Analysis using g:Profiler
+For this part of the assignment, we will be doing a thresholded over-representation analysis with g:Profiler. 
+
+## MS GM vs WM
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Define the groups 
+msUpregulated <- results_ms[results_ms$logFC > 0 & results_ms$PValue < 0.01, ]
+msDownregulated <- results_ms[results_ms$logFC < 0 & results_ms$PValue < 0.01, ]
+```
+To perform the gene enrichment analysis, we will use the R package for g:Profiler. We used FDR for correction. In our previous course journal entry assignment, we used GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP) - we will be using these sources in this section.
+
+We will be performing the analysis for up-regulated genes and down-regulated genes separately. 
+
+### Up-regulated
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Up-regulated
+msUpTopTerms <- gprofiler2::gost(query = rownames(msUpregulated), 
+                                  organism = "hsapiens", 
+                                  exclude_iea = TRUE,
+                                  correction_method = "fdr",
+                                  sources = c("GO:BP", "REAC", "WP"))
+
+# Limit term size
+msUpTopTerms <- data.frame(
+  term_name = msUpTopTerms$result$term_name[msUpTopTerms$result$term_size < 500 &
+                                               msUpTopTerms$result$term_size > 1],
+  term_id = msUpTopTerms$result$term_id[msUpTopTerms$result$term_size < 500 &
+                                           msUpTopTerms$result$term_size > 1],
+  source = msUpTopTerms$result$source[msUpTopTerms$result$term_size < 500 &
+                                         msUpTopTerms$result$term_size > 1]
+)
+
+# Visualize our results
+knitr::kable(head(msUpTopTerms, 10), format = "html")
+```
+**Table 2.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+Number of terms:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+length(msUpTopTerms$term_name)
+```
+
+We are going to want to look at the top terms for each source eventually, so we can look at it now. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(rbind(msUpTopTerms[msUpTopTerms$source == "GO:BP",][1,],
+                   msUpTopTerms[msUpTopTerms$source == "REAC",][1,],
+                   msUpTopTerms[msUpTopTerms$source == "WP",][1,]),
+             format = "html")
+```
+**Table 3.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+### Down-regulated
+Now, do the same for the down-regulated genes.
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Down-regulated
+msDownTopTerms <- gprofiler2::gost(query = rownames(msDownregulated), 
+                                  organism = "hsapiens", 
+                                  exclude_iea = TRUE,
+                                  correction_method = "fdr",
+                                  sources = c("GO:BP", "REAC", "WP"))
+
+# Limit term size
+msDownTopTerms <- data.frame(
+  term_name = msDownTopTerms$result$term_name[msDownTopTerms$result$term_size < 500 &
+                                               msDownTopTerms$result$term_size > 1],
+  term_id = msDownTopTerms$result$term_id[msDownTopTerms$result$term_size < 500 &
+                                           msDownTopTerms$result$term_size > 1],
+  source = msDownTopTerms$result$source[msDownTopTerms$result$term_size < 500 &
+                                         msDownTopTerms$result$term_size > 1]
+)
+
+# Visualize our results
+knitr::kable(head(msDownTopTerms, 10), format = "html")
+```
+**Table 4.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+Number of terms:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+length(msDownTopTerms$term_name)
+```
+
+We are going to want to look at the top terms for each source eventually, so we can look at it now. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(rbind(msDownTopTerms[msDownTopTerms$source == "GO:BP",][1,],
+                   msDownTopTerms[msDownTopTerms$source == "REAC",][1,],
+                   msDownTopTerms[msDownTopTerms$source == "WP",][1,]),
+             format = "html")
+```
+**Table 5.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+
+### All DE genes
+We will now be looking at all the differentially expressed genes as a whole. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Up-regulated
+msAllTopTerms <- gprofiler2::gost(query = rownames(results_ms), 
+                                  organism = "hsapiens", 
+                                  exclude_iea = TRUE,
+                                  correction_method = "fdr",
+                                  sources = c("GO:BP", "REAC", "WP"))
+
+# Limit term size
+msAllTopTerms <- data.frame(
+  term_name = msAllTopTerms$result$term_name[msAllTopTerms$result$term_size < 500 &
+                                               msAllTopTerms$result$term_size > 1],
+  term_id = msAllTopTerms$result$term_id[msAllTopTerms$result$term_size < 500 &
+                                           msAllTopTerms$result$term_size > 1],
+  source = msAllTopTerms$result$source[msAllTopTerms$result$term_size < 500 &
+                                         msAllTopTerms$result$term_size > 1]
+)
+
+# Visualize our results
+knitr::kable(head(msAllTopTerms, 10), format = "html")
+```
+**Table 6.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+Number of terms:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+length(msAllTopTerms$term_name)
+```
+
+Look for the top terms from each source:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(rbind(msAllTopTerms[msAllTopTerms$source == "GO:BP",][1,],
+                   msAllTopTerms[msAllTopTerms$source == "REAC",][1,],
+                   msAllTopTerms[msAllTopTerms$source == "WP",][1,]),
+             format = "html")
+```
+**Table 7.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+## CON GM vs WM
+We will be doing the same analysis for the CON patient group.
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Define the groups 
+conUpregulated <- results_con[results_con$logFC > 0 & results_con$PValue < 0.01, ]
+conDownregulated <- results_con[results_con$logFC < 0 & results_con$PValue < 0.01, ]
+```
+To perform the gene enrichment analysis, we will use the R package for g:Profiler. We used FDR for correction. In our previous course journal entry assignment, we used GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP) - we will be using these sources in this section.
+
+We will be performing the analysis for up-regulated genes and down-regulated genes separately. 
+
+### Up-regulated
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Up-regulated
+conUpTopTerms <- gprofiler2::gost(query = rownames(conUpregulated), 
+                                  organism = "hsapiens", 
+                                  exclude_iea = TRUE,
+                                  correction_method = "fdr",
+                                  sources = c("GO:BP", "REAC", "WP"))
+
+# Limit term size
+conUpTopTerms <- data.frame(
+  term_name = conUpTopTerms$result$term_name[conUpTopTerms$result$term_size < 500 &
+                                               conUpTopTerms$result$term_size > 1],
+  term_id = conUpTopTerms$result$term_id[conUpTopTerms$result$term_size < 500 &
+                                           conUpTopTerms$result$term_size > 1],
+  source = conUpTopTerms$result$source[conUpTopTerms$result$term_size < 500 &
+                                         conUpTopTerms$result$term_size > 1]
+)
+
+# Visualize our results
+knitr::kable(head(conUpTopTerms, 10), format = "html")
+```
+**Table 8.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+Number of terms:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+length(conUpTopTerms$term_name)
+```
+
+We are going to want to look at the top terms for each source eventually, so we can look at it now. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(rbind(conUpTopTerms[conUpTopTerms$source == "GO:BP",][1,],
+                   conUpTopTerms[conUpTopTerms$source == "REAC",][1,],
+                   conUpTopTerms[conUpTopTerms$source == "WP",][1,]),
+             format = "html")
+```
+**Table 9.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+Interestingly, there are 0 terms for the WP source. 
+
+### Down-regulated
+Now, do the same for the down-regulated genes.
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Down-regulated
+conDownTopTerms <- gprofiler2::gost(query = rownames(conDownregulated), 
+                                  organism = "hsapiens", 
+                                  exclude_iea = TRUE,
+                                  correction_method = "fdr",
+                                  sources = c("GO:BP", "REAC", "WP"))
+
+# Limit term size
+conDownTopTerms <- data.frame(
+  term_name = conDownTopTerms$result$term_name[conDownTopTerms$result$term_size < 500 &
+                                               conDownTopTerms$result$term_size > 1],
+  term_id = conDownTopTerms$result$term_id[conDownTopTerms$result$term_size < 500 &
+                                           conDownTopTerms$result$term_size > 1],
+  source = conDownTopTerms$result$source[conDownTopTerms$result$term_size < 500 &
+                                         conDownTopTerms$result$term_size > 1]
+)
+
+# Visualize our results
+knitr::kable(head(conDownTopTerms, 10), format = "html")
+```
+**Table 10.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+
+Number of terms:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+length(conDownTopTerms$term_name)
+```
+
+We are going to want to look at the top terms for each source eventually, so we can look at it now. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(rbind(conDownTopTerms[conDownTopTerms$source == "GO:BP",][1,],
+                   conDownTopTerms[conDownTopTerms$source == "REAC",][1,],
+                   conDownTopTerms[conDownTopTerms$source == "WP",][1,]),
+             format = "html")
+```
+**Table 11.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+As we saw earlier from the up-regulated analysis for the CON samples, the WP source had 0 terms. We have a top term from WP in the down-regaulted genes as seen in Table 9. We can check this out.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(head(conDownTopTerms[conDownTopTerms$source == "WP",], 10), format = "html")
+nrow(conDownTopTerms[conDownTopTerms$source == "WP",])
+```
+**Table 12.** The top 10 terms from WP for the down-regulated genes in GM vs WM tissues in the CON patient group. 
+
+### All DE genes
+We will now be looking at all the differentially expressed genes as a whole. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Up-regulated
+conAllTopTerms <- gprofiler2::gost(query = rownames(results_con), 
+                                  organism = "hsapiens", 
+                                  exclude_iea = TRUE,
+                                  correction_method = "fdr",
+                                  sources = c("GO:BP", "REAC", "WP"))
+
+# Limit term size
+conAllTopTerms <- data.frame(
+  term_name = conAllTopTerms$result$term_name[conAllTopTerms$result$term_size < 500 &
+                                               conAllTopTerms$result$term_size > 1],
+  term_id = conAllTopTerms$result$term_id[conAllTopTerms$result$term_size < 500 &
+                                           conAllTopTerms$result$term_size > 1],
+  source = conAllTopTerms$result$source[conAllTopTerms$result$term_size < 500 &
+                                         conAllTopTerms$result$term_size > 1]
+)
+
+# Visualize our results
+knitr::kable(head(conAllTopTerms, 10), format = "html")
+```
+**Table 13.** The first top 10 terms across all the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+Number of terms:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+length(conAllTopTerms$term_name)
+```
+
+Look for the top terms from each source:
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::kable(rbind(conAllTopTerms[conAllTopTerms$source == "GO:BP",][1,],
+                   conAllTopTerms[conAllTopTerms$source == "REAC",][1,],
+                   conAllTopTerms[conAllTopTerms$source == "WP",][1,]),
+             format = "html")
+```
+**Table 14.** The top term from each of the three sources, GO Biological Process (GO:BP), Reactome (REAC), and WikiPathways (WP). The ID of each term is also included. 
+
+## Thresholded over-representation analysis Discussion
 ### 1. Which method did you choose and why?
 
 ### 2. What annotation data did you use and why? What version of the annotation are you using?
@@ -402,4 +670,4 @@ draw(hmapDEG,
 
 ### 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
 
-#References
+# References
