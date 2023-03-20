@@ -815,12 +815,30 @@ The ID of each term is also included.
 ## Thresholded over-representation analysis discussion
 
 ### 1. Which method did you choose and why?
+I used g:Profiler in this assignment as we have gone over this method in lecture and in the previous journal entry assignment. Additionally, they update the annotation data regularly across many evidence types, identifier spaces and organisms. The parameters, significance thresholds, term sizes, and correction method, are also customizable. 
+
 
 ### 2. What annotation data did you use and why? What version of the annotation are you using?
+I chose GO:BP (releases/2022-12-04), Reactome (releases/2022-12-28), and WikiPathways (releases/2022-12-10) as we have already used them for the previous journal entry assignment. GO:BP and Reactome support the most up-to-date annotation of human genes, which is highly wanted in our case since we are looking at a human disease. WikiPathways covers many types of molecular pathways.
+
 
 ### 3. How many genesets were returned with what thresholds?
+I used a threshold of adjusted p-value < 0.01, and term size between 1 and 500.
+
+MS GM vs. WM: <br>
+Up-regulated: `r length(msUpTopTerms$term_name)` gene sets \
+Down-regulated: `r length(msDownTopTerms$term_name)` genes sets \
+All DE genes returned `r length(msAllTopTerms$term_name)` gene sets.
+
+CON GM vs. WM: <br>
+Up-regulated: `r length(conUpTopTerms$term_name)` gene sets \
+Down-regulated: `r length(conDownTopTerms$term_name)` gene sets \
+All DE genes returned `r length(conAllTopTerms$term_name)` gene sets.
+
 
 ### 4. Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
+Overall, using the whole list of genes returned much more gene sets than running up-regulated and down-regulated genes separately. Additionally, there were much more gene sets for the down-regulated genes than up-regulated genes in both comparisons. This may suggest that there are more genes that are down-regulated that are of biological significance. 
+
 
 # Task 3: Interpretation
 
