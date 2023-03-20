@@ -1,7 +1,7 @@
 ---
 title: "BCB420 Assignment 2: Differential Gene Expression Analysis and Preliminary ORA"
 author: "Veronica Chang"
-date: "March 14th, 2023"
+date: "March 20th, 2023"
 output:
   html_document:
     toc: true
@@ -38,7 +38,7 @@ Ultimately, they wanted to discover MS-related changes in microglia between the 
 
 After our previous analysis in A1, the final dataset was made up of:
 
-    - `15076` with unique identifiers
+    - 15076 with unique identifiers
 
     - 31 samples in total
 
@@ -837,16 +837,16 @@ All DE genes returned `r length(conAllTopTerms$term_name)` gene sets.
 
 
 ### 4. Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
-Overall, using the whole list of genes returned much more gene sets than running up-regulated and down-regulated genes separately (as seen in the previous question). There were also much more gene sets for the down-regulated genes than up-regulated genes in both comparisons. This may suggest that there are more genes that are down-regulated that are of biological significance. Additionally, for the analysis with all DE genes, the top terms were very general, e.g. RNA splicing, mRNA processing, and histone modification. Running the genes separately yielded more terms that were relevant to the research topic like immunopathways such as IL-18 signaling pathway, and myeloid leukocyte mediated immunity.
+Overall, using the whole list of genes returned much more gene sets than running up-regulated and down-regulated genes separately (as seen in the previous question). There were also much more gene sets for the down-regulated genes than up-regulated genes in both comparisons. This may suggest that there are more genes that are down-regulated that are of biological significance. Additionally, for the analysis with all DE genes, the top terms were very general, e.g. RNA splicing, mRNA processing, and histone modification. Running the genes separately yielded more terms that were relevant to the research topic like immunopathways such as IL-18 signaling pathway, NF-kB pathway, and myeloid leukocyte mediated immunity.
 
 
 # Task 3: Interpretation
 
 ### 1. Do the over-representation results support conclusions or mechanism discussed in the original paper?
-
+Yes, our over-representation analysis results support the conclusions or mechanisms discussed in the paper by van der Poel et al. [@vanderPoel2019]. The paper attempts to define a region-specific transcriptional profile for human microglia in GM and WM tissue, and our analysis has shown that there are many DE genes between the two tissues in both patient groups. Additionally, macrophage- and myeloid-related pathways have also been shown in our top terms as was seen in the paper. 
 
 
 ### 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
-
+It has already been shown that the NF-kB pathway is essential in the pathology of MS and is one of the terms that has shown up in our analysis [@mcguire2013]. Our analysis has shown associations with pathways related to myeloid mediated immunity, and myeloid cell activation. MS is a demyelinating disease and the demyelination of the myelin sheath leads to the formation of lesions/plaques. There were many terms related to lipid metabolism which relates back to MS pathology - there is a complex arrangement of lipids within the myelin sheath [@podbielska2021] and gene expression within these pathways can point to evidence of lipid markers used in the prediction of the course of MS. Lesions are classically found in the white matter of the brain. Lesions in MS are classically found in the WM regions of the brain and, interestingly, WM regions are lipid-rich [@vanderPoel2019].
 
 # References
