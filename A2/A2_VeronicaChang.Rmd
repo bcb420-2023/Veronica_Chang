@@ -837,13 +837,16 @@ All DE genes returned `r length(conAllTopTerms$term_name)` gene sets.
 
 
 ### 4. Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
-Overall, using the whole list of genes returned much more gene sets than running up-regulated and down-regulated genes separately. Additionally, there were much more gene sets for the down-regulated genes than up-regulated genes in both comparisons. This may suggest that there are more genes that are down-regulated that are of biological significance. 
+Overall, using the whole list of genes returned much more gene sets than running up-regulated and down-regulated genes separately (as seen in the previous question). There were also much more gene sets for the down-regulated genes than up-regulated genes in both comparisons. This may suggest that there are more genes that are down-regulated that are of biological significance. Additionally, for the analysis with all DE genes, the top terms were very general, e.g. RNA splicing, mRNA processing, and histone modification. Running the genes separately yielded more terms that were relevant to the research topic like immunopathways such as IL-18 signaling pathway, and myeloid leukocyte mediated immunity.
 
 
 # Task 3: Interpretation
 
 ### 1. Do the over-representation results support conclusions or mechanism discussed in the original paper?
 
+
+
 ### 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
+
 
 # References
