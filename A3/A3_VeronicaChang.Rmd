@@ -1,0 +1,101 @@
+---
+title: "BCB420 Assignment 3: Gene Set Enrichment and Network Analysis"
+author: "Veronica Chang"
+date: "April 7th, 2023"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: sentence
+bibliography: a3.bib
+---
+
+# Introduction
+
+## Background
+
+Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease.
+MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS).
+Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences.
+Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes.
+Their role in MS is complex and controversial [@luo2017].
+In this paper by van der Poel et.
+al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples.
+From each sample, the total RNA was extracted [@vanderPoel2019].
+
+## Objectives
+
+The authors isolated human microglia according to the previously described general experimental design.
+They suggest that pathological changes in MS tissue may be associated with changes in microglia, leading to lesion initiation.
+The authors wanted to analyze the transcriptional profile of microglia in the collected samples by RNA-sequencing [@vanderPoel2019].
+Ultimately, they wanted to discover MS-related changes in microglia between the GM and WM brain regions.
+
+## Summary of previous analysis
+
+In A1, we did data cleaning, normalization, and mapped HUGO symbols. We initially had X genes and after filtering out those with low counts (< 1 count/million), we were left with X genes. TMM was used to normalize the counts. Our genes were already mapped to HUGO symbols. With an MDS plot, we saw that our samples clustered together by tissue, WM or GM, regardless of whether the samples were from MS or CON patients. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::include_graphics("~/projects/A3/figures/a1_mdsplot.png")
+```
+
+In A2, we did differential expression analysis and preliminary over-representation analysis (ORA). In the ORA, we found X genes were significantly differentially expressed with a p-value < 0.05. After Benjamni-Hochberg correction, X genes passed and we generated a volcano plot for each patient group. 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+knitr::include_graphics("~/projects/A3/figures/a2_heatmap.png")
+knitr::include_graphics("~/projects/A3/figures/a2_volcanoms.png")
+knitr::include_graphics("~/projects/A3/figures/a2_volcanocon.png")
+```
+
+# Dependencies and data preparation
+## Packages
+-   [BiocManager](https://CRAN.R-project.org/package=BiocManager) [@morgan2022]
+-   [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) [@smyth2015]
+-   [knitr](https://cran.rstudio.com/web/packages/knitr/index.html) [@xie2023]
+-   [dplyr](https://cran.r-project.org/web/packages/dplyr/index.html) [@wickham2023]
+-   [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) [@robinson2010]
+-   [ComplexHeatmap](https://bioconductor.org/packages/release/bioc/html/ComplexHeatmap.html) [@gu2016]
+-   [circlize](https://cran.r-project.org/web/packages/circlize/index.html) [@gu2022]
+-   [gprofiler2](https://cran.r-project.org/web/packages/gprofiler2/) [@kolberg2021]
+-   [RColorBrewer](https://cran.r-project.org/package=RColorBrewer) [@neuwirth2022]
+-   [kableExtra](https://cran.r-project.org/web/packages/kableExtra/) [@zhu2021]
+
+```{r, message = FALSE, warning=FALSE}
+if (! requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+if (! requireNamespace("limma", quietly = TRUE)) {
+  BiocManager::install("limma")
+}
+if (! requireNamespace("knitr", quietly = TRUE)) {
+  install.packages("knitr")
+}
+if (! requireNamespace("dplyr", quietly = TRUE)) {
+  install.packages("dplyr")
+}
+if (! requireNamespace("edgeR", quietly = TRUE)) {
+  BiocManager::install("edgeR")
+}
+if (! requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+  BiocManager::install("ComplexHeatmap")
+}
+if (! requireNamespace("circlize", quietly = TRUE)) {
+  BiocManager::install("circlize")
+}
+if (!requireNamespace("gprofiler2", quietly = TRUE)) {
+    install.packages("gprofiler2")
+}
+
+library("Biobase")
+library("knitr")
+library("edgeR")
+library("limma")
+library("dplyr")
+library("ggplot2")
+library("ComplexHeatmap")
+library("circlize")
+library("gprofiler2")
+library("RColorBrewer")
+library("kableExtra")
+```
