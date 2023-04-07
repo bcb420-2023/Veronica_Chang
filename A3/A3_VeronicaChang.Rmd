@@ -19,12 +19,8 @@ bibliography: a3.bib
 ## Background
 
 Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease.
-MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS).
-Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences.
-Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes.
-Their role in MS is complex and controversial [@luo2017].
-In this paper by van der Poel et.
-al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples.
+MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS). Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences.
+Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes. Their role in MS is complex and controversial [@luo2017].In this paper by van der Poel et. al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples.
 From each sample, the total RNA was extracted [@vanderPoel2019].
 
 ## Objectives
@@ -36,12 +32,12 @@ Ultimately, they wanted to discover MS-related changes in microglia between the 
 
 ## Summary of previous analysis
 
-In A1, we did data cleaning, normalization, and mapped HUGO symbols. We initially had X genes and after filtering out those with low counts (< 1 count/million), we were left with X genes. TMM was used to normalize the counts. Our genes were already mapped to HUGO symbols. With an MDS plot, we saw that our samples clustered together by tissue, WM or GM, regardless of whether the samples were from MS or CON patients. 
+In A1, we did data cleaning, normalization, and mapped HUGO symbols. We initially had `21283` genes and after filtering out those with low counts (< 1 count/million), we were left with `15076` genes. TMM was used to normalize the counts. Our genes were already mapped to HUGO symbols. With an MDS plot, we saw that our samples clustered together by tissue, WM or GM, regardless of whether the samples were from MS or CON patients. 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 knitr::include_graphics("~/projects/A3/figures/a1_mdsplot.png")
 ```
 
-In A2, we did differential expression analysis and preliminary over-representation analysis (ORA). In the ORA, we found X genes were significantly differentially expressed with a p-value < 0.05. After Benjamni-Hochberg correction, X genes passed and we generated a volcano plot for each patient group. 
+In A2, we did differential expression analysis and preliminary over-representation analysis (ORA). In the ORA, with comparison of the two tissues, GM and WM - we found `3042` genes that were differentially expressed in `MS` patients, and `2901` genes that were differentially expressed in `CON` patients using the conventional p-value of 0.05. This was a high number, so we reduced the p-value to 0.01.There `1621` genes for the MS patients and `1498` genes for the CON patients.
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 knitr::include_graphics("~/projects/A3/figures/a2_heatmap.png")
 knitr::include_graphics("~/projects/A3/figures/a2_volcanoms.png")
@@ -99,3 +95,25 @@ library("gprofiler2")
 library("RColorBrewer")
 library("kableExtra")
 ```
+
+## Load data
+We will be loading the results of our DE analysis from A2 as our input for this assignment.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Comparison between GM and WM from MS
+deg_con <- read.csv("~/projects/A3/data/results_con.csv", sep=";", row.names = 1,
+    header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+# Comparison between GM and WM from CON
+deg_ms <- read.csv("~/projects/A3/data/results_ms.csv", sep=";", row.names = 1,
+    header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+```
+The loaded data was produced with the `topTags` function from the `edgeR` package - consisting of the log FC, log CPM, F-value, p-value, and adjusted p-value (FDR) for each DE gene.
+
+# Task 1: Non-thresholded GSEA
+We will perform GSEA on the the DE genes between GM and WM for each patient group separately. We will then compare our GSEA results with the ORA results we previously got from A2.
+
+
+
+# Task 2: Visualize the GSEA in Cytoscape
+
+# Task 3: Interpretation and detailed view of results
