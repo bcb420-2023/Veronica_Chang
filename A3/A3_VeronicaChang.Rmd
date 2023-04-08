@@ -82,6 +82,12 @@ if (! requireNamespace("circlize", quietly = TRUE)) {
 if (!requireNamespace("gprofiler2", quietly = TRUE)) {
     install.packages("gprofiler2")
 }
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+    install.packages("tidyverse")
+}
+if (! requireNamespace("fgsea", quietly = TRUE)) {
+  BiocManager::install("fgsea")
+}
 
 library("Biobase")
 library("knitr")
@@ -94,6 +100,7 @@ library("circlize")
 library("gprofiler2")
 library("RColorBrewer")
 library("kableExtra")
+library("stringr")
 ```
 
 ## Load data
@@ -103,15 +110,199 @@ We will be loading the results of our DE analysis from A2 as our input for this 
 # Comparison between GM and WM from MS
 deg_con <- read.csv("~/projects/A3/data/results_con.csv", sep=";", row.names = 1,
     header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+library(tidyverse)
+deg_con <- deg_con %>%
+    mutate_all(funs(parse_number(str_replace(., ",", "."))))
 # Comparison between GM and WM from CON
 deg_ms <- read.csv("~/projects/A3/data/results_ms.csv", sep=";", row.names = 1,
     header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+deg_ms <- deg_ms %>%
+    mutate_all(funs(parse_number(str_replace(., ",", "."))))
 ```
 The loaded data was produced with the `topTags` function from the `edgeR` package - consisting of the log FC, log CPM, F-value, p-value, and adjusted p-value (FDR) for each DE gene.
 
 # Task 1: Non-thresholded GSEA
 We will perform GSEA on the the DE genes between GM and WM for each patient group separately. We will then compare our GSEA results with the ORA results we previously got from A2.
 
+GSEA is a non-threshold method - since we use a ranked list of genes without an arbitrary threshold, we can perform an assessment of all genes in the list. GSEA is more consistent in identifying enriched gene sets and pathways, making it a more preferable method over ORA for analysis of two sets of DE genes under two different conditions [@abatangelo2009]. In this report, the two different conditions will be the patient groups (MS/CON).
+
+We will make a ranked list of genes to provide as an input into GSEA. A gene's rank is calculated by the negative log10 of its p-value by the sign of the logFC.
+
+GSEA is performed using the GSEA software [Version 4.3.2](https://www.gsea-msigdb.org/gsea/index.jsp), using the
+predefined `GSEAPreranked` mode. We performed GSEA analysis with the following parameters:
+
+* Number of permutations: 1000
+* Max size: 200
+* Min size: 15
+
+`Max size` and `Min size` represent the upper and lower bounds of the gene set size that is included in the analysis. This allows us to identify pathways that are specific enough for later interpretation. Due to the nature of our chosen data set, we are interested in understanding the biological processes that may be involved
+in this process. We used the most recent version (March 2023) of the `Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt` gene set from the Bader Lab at the University of Toronto. This can be found [here](http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/). We specifically chose the gene set that has no annotations from electronic annotations (IEA). This annotation file curates all GO: Biological Process terms as well as pathways from multiple pathway databases like Reactome [@vastrik2007] and MSigDB [@liberzon2011].
+
+
+## GSEA of MS patient samples
+### Ranked Gene List
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Just going to name the gene column
+deg_ms$Gene <- rownames(deg_ms)
+# Constructing ranked gene list
+deg_ms$rank <- (- log(deg_ms$PValue, base = 10)) * sign(deg_ms$logFC)
+deg_ms_ranked <- dplyr::select(deg_ms, Gene, rank) %>% 
+    arrange(desc(rank)) %>%
+    dplyr::select(Gene, rank)
+# Save the ranked gene list
+write.table(deg_ms_ranked, file = "~/projects/A3/data/deg_ms.rnk", sep = "\t", 
+        col.name = TRUE, row.names = FALSE, quote = FALSE)
+```
+
+### GSEA 
+Configuration
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Defining paths
+gsea_exe <- "~/projects/GSEA_4.3.2/gsea-cli.sh"
+gsea_dir <- "~/projects/A3/data/MS"
+gsea_gmt <- "~/projects/A3/data/Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt"
+gsea_rnk <- "~/projects/A3/data/deg_ms.rnk"
+# Permutations
+perm <- 1000
+# Max size
+max_size <- 200
+# Min size
+min_size <- 15
+# Analysis name
+analysis_name <- "GMvsWM_MS"
+```
+
+Download the GMT file if not already downloaded.
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+if (!file.exists(gsea_gmt)) {
+    gmt_url <- "http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt"
+    download.file(gmt_url, destfile = gsea_gmt)
+}
+```
+Run GSEA.
+```{r, warning=FALSE, message = FALSE}
+cmd <- paste(gsea_exe, "GSEAPreranked", 
+            "-gmx", gsea_gmt, 
+            "-collapse false", 
+            "-nperm", perm, 
+            "-rnk", gsea_rnk,
+            "-scoring_scheme weighted",
+            "-rpt_label", analysis_name,
+            "-plot_top_x 20 -rnd_seed 12345",
+            "-set_max", max_size, 
+            "-set_min", min_size, 
+            "-zip_report false", 
+            "-out", gsea_dir)
+system(cmd)
+```
+Results
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+ms_up_reg <- read.table(file = "~/projects/A3/data/MS/GMvsWM_MS.GseaPreranked.1680973644388/gsea_report_for_na_pos_1680973644388.tsv", sep = '\t', header = TRUE, fill = TRUE)
+ms_neg_reg <- read.table(file = "~/projects/A3/data/MS/GMvsWM_MS.GseaPreranked.1680973644388/gsea_report_for_na_neg_1680973644388.tsv", sep = '\t', header = TRUE, fill = TRUE)
+```
+Upregulated
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Prepare for display
+upreg_table <- ms_up_reg %>% 
+    dplyr::select(NAME, SIZE, ES, FDR.q.val) %>%
+    dplyr::rename("Gene Set" = NAME, "Size" = SIZE, 
+                  "Enrichment Score" = ES, "FDR q-value" = FDR.q.val) %>%
+    # Format NAME
+    dplyr::mutate(`Gene Set` = stringr::str_remove(`Gene Set`, "%.*$")) %>%
+    dplyr::mutate(`Gene Set` = stringr::str_to_sentence(`Gene Set`)) %>%
+    # Sort the table by FDR q-value
+    dplyr::arrange(`FDR q-value`)
+# Display the table
+DT::datatable(upreg_table, rownames = FALSE, filter = "top", 
+    options = list(ppageLength = 10, scrollX = TRUE)) %>%
+    # Changing the font size of content
+    DT::formatStyle(names(upreg_table), fontSize = "12px")
+```
+
+<br>
+**Table 1.** Enriched gene sets of the upregulated genes in GM vs WM in the MS patient group. 
+
+Downregulated
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Prepare for display
+negreg_table <- ms_neg_reg %>% 
+    dplyr::select(NAME, SIZE, ES, FDR.q.val) %>%
+    dplyr::rename("Gene Set" = NAME, "Size" = SIZE, 
+                  "Enrichment Score" = ES, "FDR q-value" = FDR.q.val) %>%
+    # Format NAME
+    dplyr::mutate(`Gene Set` = stringr::str_remove(`Gene Set`, "%.*$")) %>%
+    dplyr::mutate(`Gene Set` = stringr::str_to_sentence(`Gene Set`)) %>%
+    # Sort the table by FDR q-value
+    dplyr::arrange(`FDR q-value`)%>%
+    # Select significantly enriched gene sets
+    dplyr::filter(`FDR q-value` < 0.25)
+# Display the table
+DT::datatable(negreg_table, rownames = FALSE, filter = "top", 
+    options = list(ppageLength = 10, scrollX = TRUE)) %>%
+    # Changing the font size of content
+    DT::formatStyle(names(negreg_table), fontSize = "12px")
+```
+
+<br>
+**Table 2.** Significanlty enriched gene sets of the downregulated genes in GM vs WM in the MS patient group (FDR < 0.25). 
+
+Notably, our GSEA analysis identified ``r nrow(upreg_table)`` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but 0 were significantly enriched (FDR < 0.25). While there were ``r nrow(negreg_table)`` gene sets that were were significantly enriched (FDR < 0.25) in the downregulated genes in GM vs WM in MS patients. 
+
+
+We can look at the top 5 gene sets over-represented at the top of the ranked gene list.
+ 
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+up_res <- data.frame(pathway = upreg_table$`Gene Set`,
+  size = upreg_table$Size,
+  FDR = upreg_table$`FDR q-value`,
+  es = upreg_table$`Enrichment Score`
+)
+
+ggplot(up_res[1:5,]) + 
+  geom_point(aes(
+    x = es, 
+    color = FDR,
+    y = pathway,
+    size = size)) +
+  theme(axis.title.x = element_text(),
+        axis.title.y = element_text()) +
+  scale_color_gradient(low = "red", high = "blue") +
+  labs(x = "Enrichment Score",
+       color = "FDR", 
+       size = "Genesize set", 
+       y = NULL,
+       title = "Top enriched gene sets in upregulated 
+       genes in GM vs WM of MS patients")
+```
+**Figure 1.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes. Dots are are coloured
+by FDR and their size is determined by the size of the gene set. 
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+neg_res <- data.frame(pathway = negreg_table$`Gene Set`,
+  size = negreg_table$Size,
+  FDR = negreg_table$`FDR q-value`,
+  es = negreg_table$`Enrichment Score`
+)
+
+ggplot(neg_res[1:5,]) + 
+  geom_point(aes(
+    x = es, 
+    color = FDR,
+    y = pathway,
+    size = size)) +
+  theme(axis.title.x = element_text(),
+        axis.title.y = element_text()) +
+  scale_color_gradient(low = "red", high = "blue") +
+  labs(x = "Enrichment Score",
+       color = "FDR", 
+       size = "Genesize set", 
+       y = NULL,
+       title = "Top enriched gene sets in downregulated 
+       genes in GM vs WM of MS patients")
+```
+**Figure 2.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes. Dots are are coloured
+by FDR and their size is determined by the size of the gene set. 
 
 
 # Task 2: Visualize the GSEA in Cytoscape
