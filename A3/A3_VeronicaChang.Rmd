@@ -618,7 +618,7 @@ While the results from the two different analyses are not the exact same, I do n
 
 # Task 2: Visualize the GSEA in Cytoscape
 ## Enrichment map construction
-We have attempted to run EnrichmentMap from within R but ran into issues. Instead, we used the EnrichmentMap app [@merico2010] in the [Cytoscape 3.9.1](https://cytoscape.org/) software [@shannon2003]. The EnrichmentMap app needs to be installed separately. The default parameters were used and edge cutoff was set to 0.375 with the Jaccard + Overlap combined metric.
+We have attempted to run EnrichmentMap from within R but ran into issues. Instead, we used the EnrichmentMap (3.3.5) app [@merico2010] in the [Cytoscape 3.9.1](https://cytoscape.org/) software [@shannon2003]. The EnrichmentMap app needs to be installed separately. The default parameters were used and edge cutoff was set to 0.375 with the Jaccard + Overlap combined metric.
 
 ```{r}
 knitr::include_graphics("~/projects/A3/figures/MS_network.png")
@@ -640,12 +640,42 @@ knitr::include_graphics("~/projects/A3/figures/annoCON_network.png")
 ```
 
 
-**Figure 8.** (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients. Both are prior to manual layout. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation.
+**Figure 9.** (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation.
+
+
+To produce a publication-ready figure, we excluded some themes that were irrelevant - too generic, little/no edges between nodes. 
+
+```{r}
+knitr::include_graphics("~/projects/A3/figures/pubReadyAnno_network.png")
+```
+
+
+**Figure 10.** Enrichment Map created with the EnrichmentMap (3.3.5) app in Cytoscape 3.9.1. Network was created with parameters FDR Q-value threshold < 0.01 and combined similarity cutoff > 0.375. Annotations were made with the AutoAnnotate app (1.4.0). Themes with little/no edges and generic terms were removed. (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation.
+
 
 
 ## Collapse to a theme network
+**Fig. 9** gives us a better idea of the biological themes of our gene sets. To better visualize these relationships, we further collapsed the clusters into single nodes by selecting the `Collapse all` option in the AutoAnnotate menu and used the `CoSE (Compound Spring Embedder)` algorithm.
+
+
 ```{r}
-knitr::include_graphics("~/projects/A3/figures/")
+knitr::include_graphics("~/projects/A3/figures/collapseAnnoMS_network.png")
+knitr::include_graphics("~/projects/A3/figures/collapseAnnoCON_network.png")
 ```
+
+
+**Figure 11.** (**A**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in CON patients. CoSE cluster layout was used. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation. 
+
+
+**Fig. 11** still seems to be a bit "busy". We excluded some of the smaller individual nodes for both networks.
+
+
+```{r}
+knitr::include_graphics("~/projects/A3/figures/legendExcludedNetworks.png")
+```
+
+
+**Figure 12.** (**A**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in CON patients. CoSE cluster layout was used. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation. Smaller nodes from **Fig. 11** were excluded to produce these figures.
+
 
 # Task 3: Interpretation and detailed view of results
