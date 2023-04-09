@@ -625,10 +625,23 @@ knitr::include_graphics("~/projects/A3/figures/MS_network.png")
 knitr::include_graphics("~/projects/A3/figures/CON_network.png")
 ```
 
+
+**Figure 8.** (**A**) Enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Enrichment map of the dysregulated gene sets and pathways in CON patients. Both are prior to manual layout. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
+
+
+
+
 ## Network annotation
+The networks made in **Fig. 8** alone are not enough to interpret and infer the biological themes of these gene sets. We then applied the AutoAnnotate app (1.4.0) [@autoannotate] in Cytoscape [@shannon2003] to annotate the Enrichment Map. We manually eliminated clusters and nodes to make it more readable. The MCL (Markov Cluster) clustering algorithm was used to annotate the common labels of nodes. It is efficient and effective at detecting clusters in large networks. We used the default parameters: max word per label leaving = 3, minimum word occurrence = 1.
+
 ```{r}
-knitr::include_graphics("~/projects/A3/figures/")
+knitr::include_graphics("~/projects/A3/figures/annoMS_network.png")
+knitr::include_graphics("~/projects/A3/figures/annoCON_network.png")
 ```
+
+
+**Figure 8.** (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients. Both are prior to manual layout. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation.
+
 
 ## Collapse to a theme network
 ```{r}
