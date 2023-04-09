@@ -617,5 +617,22 @@ While the results from the two different analyses are not the exact same, I do n
 
 
 # Task 2: Visualize the GSEA in Cytoscape
+## Enrichment map construction
+We have attempted to run EnrichmentMap from within R but ran into issues. Instead, we used the EnrichmentMap app [@merico2010] in the [Cytoscape 3.9.1](https://cytoscape.org/) software [@shannon2003]. The EnrichmentMap app needs to be installed separately. The default parameters were used and edge cutoff was set to 0.375 with the Jaccard + Overlap combined metric.
+
+```{r}
+knitr::include_graphics("~/projects/A3/figures/MS_network.png")
+knitr::include_graphics("~/projects/A3/figures/CON_network.png")
+```
+
+## Network annotation
+```{r}
+knitr::include_graphics("~/projects/A3/figures/")
+```
+
+## Collapse to a theme network
+```{r}
+knitr::include_graphics("~/projects/A3/figures/")
+```
 
 # Task 3: Interpretation and detailed view of results
