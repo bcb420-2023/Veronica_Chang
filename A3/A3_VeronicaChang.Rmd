@@ -19,8 +19,11 @@ bibliography: a3.bib
 ## Background
 
 Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease.
-MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS). Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences.
-Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes. Their role in MS is complex and controversial [@luo2017].In this paper by van der Poel et. al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples.
+MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS).
+Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences.
+Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes.
+Their role in MS is complex and controversial [@luo2017]. In this paper by van der Poel et.
+al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples.
 From each sample, the total RNA was extracted [@vanderPoel2019].
 
 ## Objectives
@@ -32,20 +35,45 @@ Ultimately, they wanted to discover MS-related changes in microglia between the 
 
 ## Summary of previous analysis
 
-In A1, we did data cleaning, normalization, and mapped HUGO symbols. We initially had `21283` genes and after filtering out those with low counts (< 1 count/million), we were left with `15076` genes. TMM was used to normalize the counts. Our genes were already mapped to HUGO symbols. With an MDS plot, we saw that our samples clustered together by tissue, WM or GM, regardless of whether the samples were from MS or CON patients. 
+In A1, we did data cleaning, normalization, and mapped HUGO symbols.
+We initially had `21283` genes and after filtering out those with low counts (\< 1 count/million), we were left with `15076` genes.
+TMM was used to normalize the counts.
+Our genes were already mapped to HUGO symbols.
+With an MDS plot, we saw that our samples clustered together by tissue, WM or GM, regardless of whether the samples were from MS or CON patients.
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 knitr::include_graphics("~/projects/A3/figures/a1_mdsplot.png")
 ```
 
-In A2, we did differential expression analysis and preliminary over-representation analysis (ORA). In the ORA, with comparison of the two tissues, GM and WM - we found `3042` genes that were differentially expressed in `MS` patients, and `2901` genes that were differentially expressed in `CON` patients using the conventional p-value of 0.05. This was a high number, so we reduced the p-value to 0.01.There `1621` genes for the MS patients and `1498` genes for the CON patients.
+**Figure 1.** MDS plot of all MS and CON patient samples. Samples clustered together by tissue regardless of patient group.
+
+
+
+In A2, we did differential expression analysis and preliminary over-representation analysis (ORA).
+In the ORA, with comparison of the two tissues, GM and WM - we found `3042` genes that were differentially expressed in `MS` patients, and `2901` genes that were differentially expressed in `CON` patients using the conventional p-value of 0.05.
+This was a high number, so we reduced the p-value to 0.01.There `1621` genes for the MS patients and `1498` genes for the CON patients.
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 knitr::include_graphics("~/projects/A3/figures/a2_heatmap.png")
+```
+
+# Dependencies and data preparation
+
+
+**Figure 2.** Heat map of global gene expression across all samples.Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right. The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated. Values were converted from counts to CPM and scaled. The samples were also hierarchically clustered by their expression (dendrograms for both rows and columns were excluded to keep the figure neat).
+
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
 knitr::include_graphics("~/projects/A3/figures/a2_volcanoms.png")
 knitr::include_graphics("~/projects/A3/figures/a2_volcanocon.png")
 ```
 
-# Dependencies and data preparation
+**Figure 3.** Volcano plot of differentially expressed genes comparing **(A)** grey matter and white matter tissues in MS patients, and **(B)** grey matter and white matter tissues in CON patients.
+Differentially expressed genes are coloured based on whether they are up- or down-regulated.
+Genes were selected when FDR \< 0.05 AND logFC \> 0 for up-regulated OR logFC \< 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
+
 ## Packages
+
 -   [BiocManager](https://CRAN.R-project.org/package=BiocManager) [@morgan2022]
 -   [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) [@smyth2015]
 -   [knitr](https://cran.rstudio.com/web/packages/knitr/index.html) [@xie2023]
@@ -104,6 +132,7 @@ library("stringr")
 ```
 
 ## Load data
+
 We will be loading the results of our DE analysis from A2 as our input for this assignment.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -119,27 +148,38 @@ deg_ms <- read.csv("~/projects/A3/data/results_ms.csv", sep=";", row.names = 1,
 deg_ms <- deg_ms %>%
     mutate_all(funs(parse_number(str_replace(., ",", "."))))
 ```
+
 The loaded data was produced with the `topTags` function from the `edgeR` package - consisting of the log FC, log CPM, F-value, p-value, and adjusted p-value (FDR) for each DE gene.
 
 # Task 1: Non-thresholded GSEA
-We will perform GSEA on the the DE genes between GM and WM for each patient group separately. We will then compare our GSEA results with the ORA results we previously got from A2.
 
-GSEA is a non-threshold method - since we use a ranked list of genes without an arbitrary threshold, we can perform an assessment of all genes in the list. GSEA is more consistent in identifying enriched gene sets and pathways, making it a more preferable method over ORA for analysis of two sets of DE genes under two different conditions [@abatangelo2009]. In this report, the two different conditions will be the patient groups (MS/CON).
+We will perform GSEA on the the DE genes between GM and WM for each patient group separately.
+We will then compare our GSEA results with the ORA results we previously got from A2.
 
-We will make a ranked list of genes to provide as an input into GSEA. A gene's rank is calculated by the negative log10 of its p-value by the sign of the logFC.
+GSEA is a non-threshold method - since we use a ranked list of genes without an arbitrary threshold, we can perform an assessment of all genes in the list.
+GSEA is more consistent in identifying enriched gene sets and pathways, making it a more preferable method over ORA for analysis of two sets of DE genes under two different conditions [@abatangelo2009].
+In this report, the two different conditions will be the patient groups (MS/CON).
 
-GSEA is performed using the GSEA software [Version 4.3.2](https://www.gsea-msigdb.org/gsea/index.jsp), using the
-predefined `GSEAPreranked` mode. We performed GSEA analysis with the following parameters:
+We will make a ranked list of genes to provide as an input into GSEA.
+A gene's rank is calculated by the negative log10 of its p-value by the sign of the logFC.
 
-* Number of permutations: 1000
-* Max size: 200
-* Min size: 15
+GSEA is performed using the GSEA software [Version 4.3.2](https://www.gsea-msigdb.org/gsea/index.jsp), using the predefined `GSEAPreranked` mode.
+We performed GSEA analysis with the following parameters:
 
-`Max size` and `Min size` represent the upper and lower bounds of the gene set size that is included in the analysis. This allows us to identify pathways that are specific enough for later interpretation. Due to the nature of our chosen data set, we are interested in understanding the biological processes that may be involved
-in this process. We used the most recent version (March 2023) of the `Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt` gene set from the Bader Lab at the University of Toronto. This can be found [here](http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/). We specifically chose the gene set that has no annotations from electronic annotations (IEA). This annotation file curates all GO: Biological Process terms as well as pathways from multiple pathway databases like Reactome [@vastrik2007] and MSigDB [@liberzon2011].
+-   Number of permutations: 1000
+-   Max size: 200
+-   Min size: 15
 
+`Max size` and `Min size` represent the upper and lower bounds of the gene set size that is included in the analysis.
+This allows us to identify pathways that are specific enough for later interpretation.
+Due to the nature of our chosen data set, we are interested in understanding the biological processes that may be involved in this process.
+We used the most recent version (March 2023) of the `Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt` gene set from the Bader Lab at the University of Toronto.
+This can be found [here](http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/).
+We specifically chose the gene set that has no annotations from electronic annotations (IEA).
+This annotation file curates all GO: Biological Process terms as well as pathways from multiple pathway databases like Reactome [@vastrik2007] and MSigDB [@liberzon2011].
 
 ## GSEA of MS patient samples
+
 ### Ranked Gene List
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -155,8 +195,10 @@ write.table(deg_ms_ranked, file = "~/projects/A3/data/deg_ms.rnk", sep = "\t",
         col.name = TRUE, row.names = FALSE, quote = FALSE)
 ```
 
-### GSEA 
+### GSEA
+
 Configuration
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Defining paths
 gsea_exe <- "~/projects/GSEA_4.3.2/gsea-cli.sh"
@@ -174,13 +216,16 @@ analysis_name <- "GMvsWM_MS"
 ```
 
 Download the GMT file if not already downloaded.
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 if (!file.exists(gsea_gmt)) {
     gmt_url <- "http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt"
     download.file(gmt_url, destfile = gsea_gmt)
 }
 ```
+
 Run GSEA.
+
 ```{r, warning=FALSE, message = FALSE}
 cmd <- paste(gsea_exe, "GSEAPreranked", 
             "-gmx", gsea_gmt, 
@@ -194,17 +239,24 @@ cmd <- paste(gsea_exe, "GSEAPreranked",
             "-set_min", min_size, 
             "-zip_report false", 
             "-out", gsea_dir)
-system(cmd)
+path1 <- "~/projects/A3/data/MS/GMvsWM_MS.GseaPreranked.1680973644388"
+if (!file.exists(path1)) {
+    system(cmd)
+}
 ```
+
 Results
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 ms_up_reg <- read.table(file = "~/projects/A3/data/MS/GMvsWM_MS.GseaPreranked.1680973644388/gsea_report_for_na_pos_1680973644388.tsv", sep = '\t', header = TRUE, fill = TRUE)
 ms_neg_reg <- read.table(file = "~/projects/A3/data/MS/GMvsWM_MS.GseaPreranked.1680973644388/gsea_report_for_na_neg_1680973644388.tsv", sep = '\t', header = TRUE, fill = TRUE)
 ```
+
 Upregulated
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Prepare for display
-upreg_table <- ms_up_reg %>% 
+MSupreg_table <- ms_up_reg %>% 
     dplyr::select(NAME, SIZE, ES, FDR.q.val) %>%
     dplyr::rename("Gene Set" = NAME, "Size" = SIZE, 
                   "Enrichment Score" = ES, "FDR q-value" = FDR.q.val) %>%
@@ -214,19 +266,19 @@ upreg_table <- ms_up_reg %>%
     # Sort the table by FDR q-value
     dplyr::arrange(`FDR q-value`)
 # Display the table
-DT::datatable(upreg_table, rownames = FALSE, filter = "top", 
+DT::datatable(MSupreg_table, rownames = FALSE, filter = "top", 
     options = list(ppageLength = 10, scrollX = TRUE)) %>%
     # Changing the font size of content
-    DT::formatStyle(names(upreg_table), fontSize = "12px")
+    DT::formatStyle(names(MSupreg_table), fontSize = "12px")
 ```
 
-<br>
-**Table 1.** Enriched gene sets of the upregulated genes in GM vs WM in the MS patient group. 
+<br> **Table 1.** Enriched gene sets of the upregulated genes in GM vs WM in the MS patient group.
 
 Downregulated
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Prepare for display
-negreg_table <- ms_neg_reg %>% 
+MSnegreg_table <- ms_neg_reg %>% 
     dplyr::select(NAME, SIZE, ES, FDR.q.val) %>%
     dplyr::rename("Gene Set" = NAME, "Size" = SIZE, 
                   "Enrichment Score" = ES, "FDR q-value" = FDR.q.val) %>%
@@ -234,32 +286,29 @@ negreg_table <- ms_neg_reg %>%
     dplyr::mutate(`Gene Set` = stringr::str_remove(`Gene Set`, "%.*$")) %>%
     dplyr::mutate(`Gene Set` = stringr::str_to_sentence(`Gene Set`)) %>%
     # Sort the table by FDR q-value
-    dplyr::arrange(`FDR q-value`)%>%
-    # Select significantly enriched gene sets
-    dplyr::filter(`FDR q-value` < 0.25)
+    dplyr::arrange(`FDR q-value`)
 # Display the table
-DT::datatable(negreg_table, rownames = FALSE, filter = "top", 
+DT::datatable(MSnegreg_table, rownames = FALSE, filter = "top", 
     options = list(ppageLength = 10, scrollX = TRUE)) %>%
     # Changing the font size of content
-    DT::formatStyle(names(negreg_table), fontSize = "12px")
+    DT::formatStyle(names(MSnegreg_table), fontSize = "12px")
 ```
 
-<br>
-**Table 2.** Significanlty enriched gene sets of the downregulated genes in GM vs WM in the MS patient group (FDR < 0.25). 
+<br> **Table 2.** Enriched gene sets of the downregulated genes in GM vs WM in the MS patient group.
 
-Notably, our GSEA analysis identified ``r nrow(upreg_table)`` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but 0 were significantly enriched (FDR < 0.25). While there were ``r nrow(negreg_table)`` gene sets that were were significantly enriched (FDR < 0.25) in the downregulated genes in GM vs WM in MS patients. 
-
+Notably, our GSEA analysis identified `r nrow(MSupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(MSupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
+While there were `r nrow(MSnegreg_table)` gene sets enriched, and `` r sum(MSnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25) in the downregulated genes in GM vs WM in MS patients.
 
 We can look at the top 5 gene sets over-represented at the top of the ranked gene list.
- 
+
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
-up_res <- data.frame(pathway = upreg_table$`Gene Set`,
-  size = upreg_table$Size,
-  FDR = upreg_table$`FDR q-value`,
-  es = upreg_table$`Enrichment Score`
+MSup_res <- data.frame(pathway = MSupreg_table$`Gene Set`,
+  size = MSupreg_table$Size,
+  FDR = MSupreg_table$`FDR q-value`,
+  es = MSupreg_table$`Enrichment Score`
 )
 
-ggplot(up_res[1:5,]) + 
+ggplot(MSup_res[1:5,]) + 
   geom_point(aes(
     x = es, 
     color = FDR,
@@ -275,17 +324,18 @@ ggplot(up_res[1:5,]) +
        title = "Top enriched gene sets in upregulated 
        genes in GM vs WM of MS patients")
 ```
-**Figure 1.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes. Dots are are coloured
-by FDR and their size is determined by the size of the gene set. 
+
+**Figure 1.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes.
+Dots are are coloured by FDR and their size is determined by the size of the gene set.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
-neg_res <- data.frame(pathway = negreg_table$`Gene Set`,
-  size = negreg_table$Size,
-  FDR = negreg_table$`FDR q-value`,
-  es = negreg_table$`Enrichment Score`
+MSneg_res <- data.frame(pathway = MSnegreg_table$`Gene Set`,
+  size = MSnegreg_table$Size,
+  FDR = MSnegreg_table$`FDR q-value`,
+  es = MSnegreg_table$`Enrichment Score`
 )
 
-ggplot(neg_res[1:5,]) + 
+ggplot(MSneg_res[1:5,]) + 
   geom_point(aes(
     x = es, 
     color = FDR,
@@ -301,8 +351,269 @@ ggplot(neg_res[1:5,]) +
        title = "Top enriched gene sets in downregulated 
        genes in GM vs WM of MS patients")
 ```
-**Figure 2.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes. Dots are are coloured
-by FDR and their size is determined by the size of the gene set. 
+
+**Figure 2.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes.
+Dots are are coloured by FDR and their size is determined by the size of the gene set.
+
+## GSEA of CON patient samples
+
+### Ranked Gene List
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Just going to name the gene column
+deg_con$Gene <- rownames(deg_con)
+# Constructing ranked gene list
+deg_con$rank <- (- log(deg_con$PValue, base = 10)) * sign(deg_con$logFC)
+deg_con_ranked <- dplyr::select(deg_con, Gene, rank) %>% 
+    arrange(desc(rank)) %>%
+    dplyr::select(Gene, rank)
+# Save the ranked gene list
+write.table(deg_con_ranked, file = "~/projects/A3/data/deg_con.rnk", sep = "\t", 
+        col.name = TRUE, row.names = FALSE, quote = FALSE)
+```
+
+### GSEA
+
+Configuration
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Defining paths
+gsea_exe <- "~/projects/GSEA_4.3.2/gsea-cli.sh"
+gsea_dir <- "~/projects/A3/data/CON"
+gsea_gmt <- "~/projects/A3/data/Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt"
+gsea_rnk <- "~/projects/A3/data/deg_con.rnk"
+# Permutations
+perm <- 1000
+# Max size
+max_size <- 200
+# Min size
+min_size <- 15
+# Analysis name
+analysis_name <- "GMvsWM_CON"
+```
+
+Download the GMT file if not already downloaded.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+if (!file.exists(gsea_gmt)) {
+    gmt_url <- "http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt"
+    download.file(gmt_url, destfile = gsea_gmt)
+}
+```
+
+Run GSEA.
+
+```{r, warning=FALSE, message = FALSE}
+cmd <- paste(gsea_exe, "GSEAPreranked", 
+            "-gmx", gsea_gmt, 
+            "-collapse false", 
+            "-nperm", perm, 
+            "-rnk", gsea_rnk,
+            "-scoring_scheme weighted",
+            "-rpt_label", analysis_name,
+            "-plot_top_x 20 -rnd_seed 12345",
+            "-set_max", max_size, 
+            "-set_min", min_size, 
+            "-zip_report false", 
+            "-out", gsea_dir)
+path2 <- "~/projects/A3/data/CON/GMvsWM_CON.GseaPreranked.1680999322997"
+if (!file.exists(path2)) {
+    system(cmd)
+}
+
+```
+
+Results
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+con_up_reg <- read.table(file = "~/projects/A3/data/CON/GMvsWM_CON.GseaPreranked.1680999322997/gsea_report_for_na_neg_1680999322997.tsv", sep = '\t', header = TRUE, fill = TRUE)
+con_neg_reg <- read.table(file = "~/projects/A3/data/CON/GMvsWM_CON.GseaPreranked.1680999322997/gsea_report_for_na_pos_1680999322997.tsv", sep = '\t', header = TRUE, fill = TRUE)
+```
+
+Upregulated
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Prepare for display
+CONupreg_table <- con_up_reg %>% 
+    dplyr::select(NAME, SIZE, ES, FDR.q.val) %>%
+    dplyr::rename("Gene Set" = NAME, "Size" = SIZE, 
+                  "Enrichment Score" = ES, "FDR q-value" = FDR.q.val) %>%
+    # Format NAME
+    dplyr::mutate(`Gene Set` = stringr::str_remove(`Gene Set`, "%.*$")) %>%
+    dplyr::mutate(`Gene Set` = stringr::str_to_sentence(`Gene Set`)) %>%
+    # Sort the table by FDR q-value
+    dplyr::arrange(`FDR q-value`)
+# Display the table
+DT::datatable(CONupreg_table, rownames = FALSE, filter = "top", 
+    options = list(ppageLength = 10, scrollX = TRUE)) %>%
+    # Changing the font size of content
+    DT::formatStyle(names(CONupreg_table), fontSize = "12px")
+```
+
+<br> **Table 3.** Enriched gene sets of the upregulated genes in GM vs WM in the CON patient group.
+
+Downregulated
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+# Prepare for display
+CONnegreg_table <- con_neg_reg %>% 
+    dplyr::select(NAME, SIZE, ES, FDR.q.val) %>%
+    dplyr::rename("Gene Set" = NAME, "Size" = SIZE, 
+                  "Enrichment Score" = ES, "FDR q-value" = FDR.q.val) %>%
+    # Format NAME
+    dplyr::mutate(`Gene Set` = stringr::str_remove(`Gene Set`, "%.*$")) %>%
+    dplyr::mutate(`Gene Set` = stringr::str_to_sentence(`Gene Set`)) %>%
+    # Sort the table by FDR q-value
+    dplyr::arrange(`FDR q-value`)
+# Display the table
+DT::datatable(CONnegreg_table, rownames = FALSE, filter = "top", 
+    options = list(ppageLength = 10, scrollX = TRUE)) %>%
+    # Changing the font size of content
+    DT::formatStyle(names(CONnegreg_table), fontSize = "12px")
+```
+
+<br> **Table 4.** Enriched gene sets of the downregulated genes in GM vs WM in the MS patient group.
+
+Our GSEA analysis identified `r nrow(CONupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(CONupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
+While there were `r nrow(CONnegreg_table)` gene sets enriched, and `` r sum(CONnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25) in the downregulated genes in GM vs WM in MS patients.
+
+We can look at the top 5 gene sets over-represented at the top of the ranked gene list.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+CONup_res <- data.frame(pathway = CONupreg_table$`Gene Set`,
+  size = CONupreg_table$Size,
+  FDR = CONupreg_table$`FDR q-value`,
+  es = CONupreg_table$`Enrichment Score`
+)
+
+ggplot(CONup_res[1:5,]) + 
+  geom_point(aes(
+    x = es, 
+    color = FDR,
+    y = pathway,
+    size = size)) +
+  theme(axis.title.x = element_text(),
+        axis.title.y = element_text()) +
+  scale_color_gradient(low = "red", high = "blue") +
+  labs(x = "Enrichment Score",
+       color = "FDR", 
+       size = "Genesize set", 
+       y = NULL,
+       title = "Top enriched gene sets in upregulated 
+       genes in GM vs WM of CON patients")
+```
+
+**Figure 6.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes.
+Dots are are coloured by FDR and their size is determined by the size of the gene set.
+
+```{r message = FALSE, tidy=TRUE, warning=FALSE}
+CONneg_res <- data.frame(pathway = CONnegreg_table$`Gene Set`,
+  size = CONnegreg_table$Size,
+  FDR = CONnegreg_table$`FDR q-value`,
+  es = CONnegreg_table$`Enrichment Score`
+)
+
+ggplot(CONneg_res[1:5,]) + 
+  geom_point(aes(
+    x = es, 
+    color = FDR,
+    y = pathway,
+    size = size)) +
+  theme(axis.title.x = element_text(),
+        axis.title.y = element_text()) +
+  scale_color_gradient(low = "red", high = "blue") +
+  labs(x = "Enrichment Score",
+       color = "FDR", 
+       size = "Genesize set", 
+       y = NULL,
+       title = "Top enriched gene sets in downregulated 
+       genes in GM vs WM of CON patients")
+```
+
+**Figure 7.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes.
+Dots are are coloured by FDR and their size is determined by the size of the gene set.
+
+### 1. What method did you use? What genesets did you use? Make sure to specify versions and cite your methods.
+
+As mentioned earlier in this assignment, GSEA was performed using the GSEA software [Version 4.3.2](https://www.gsea-msigdb.org/gsea/index.jsp) for command line.
+We used the most recent version (March 2023) of the `Human_GOBP_AllPathways_no_GO_iea_March_02_2023_symbol.gmt` gene set from the Bader Lab at the University of Toronto.
+This can be found [here](http://download.baderlab.org/EM_Genesets/March_02_2023/Human/symbol/).
+
+### 2. Summarize your enrichment results.
+
+We identified `r nrow(MSupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(MSupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
+For the downregulated genes, there were `r nrow(MSnegreg_table)` gene sets enriched, and `` r sum(MSnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25).
+In **Fig. 4**, we can see various gene sets that are involved in immunity such as `Regulation of type I Interferon-mediated signaling pathway`.
+In **Fig. 5**, a gene set that is particularly relevant to this data set is `Hallmark tnfa signaling via nfkb`.
+In A2, we found similar results with ORA and found that the NF-kB pathway is essential in the pathology of MS [@mcguire2013].
+It is interesting how this is downregulated in GM vs WM.
+
+We identified `r nrow(CONupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(CONupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25). For the downregulated genes, there were `r nrow(CONnegreg_table)` gene sets enriched, and `` r sum(CONnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25). Interestingly, our results for this analysis (**Fig. 6**) is similar to what is seen in **Fig. 5**, with `Hallmark tnfa signaling via nfkb` in particular. For the MS group, the ES is `-0.7880487` while in the CON group, the ES is `-0.80684453`. In **Fig. 7**, a gene set that is particularly relevant to this data set is `Particular importance of Trna metabolic process.`.
+
+### 3. How do these results compare to the results from the thresholded analysis in Assignment #2. Compare qualitatively. Is this a straight forward comparison? Why or why not?
+In A2, we found:
+
+-   For the MS group:
+
+```{r}
+MSupFilePath <- "~/projects/A3/figures/a2_msUpTopTerms.RDS"
+a2_MSupResults <- readRDS(MSupFilePath)
+head(a2_MSupResults)
+```
+
+
+**Table 3.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using upregulated genes only.
+
+
+
+When comparing this to what we found in our non-thresholded GSEA in **Fig.4**, we can see that A2's results outlined in **Table 3** has more immune mechanism-related terms concerning Toll-like receptors (TLRs). **Fig.4** seems to have more vague and generic terms.
+
+
+```{r}
+MSdownFilePath <- "~/projects/A3/figures/a2_msDownTopTerms.rds"
+a2_MSdownResults <- readRDS(MSdownFilePath)
+head(a2_MSdownResults)
+```
+
+
+**Table 4.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using downregulated genes only.
+
+
+
+When comparing this to what we found in our non-thresholded GSEA in **Fig.5**, we can see that A2's results outlined in **Table 4** has terms related to translation and protein processes. There are a few translation-related terms in **Fig. 5** but there is a particular gene set that stands out with the largest size out of the top 5: the previously mentioned `Hallmark tnfa signaling via nfkb`.
+
+
+-   For the CON group:
+
+```{r}
+CONupFilePath <- "~/projects/A3/figures/a2_conUpTopTerms.RDS"
+a2_CONupResults <- readRDS(CONupFilePath)
+head(a2_CONupResults)
+```
+
+
+**Table 5.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using upregulated genes only.
+
+
+
+When comparing this to what we found in our non-thresholded GSEA in **Fig. 6**, we can see that A2's results outlined in **Table 5** has more immune mechanism-related terms such as regulation of response and myeloid leukocyte mediated immunity. Similar to what we found in A2, **Fig. 6** has the term `Hallmark tnfa signaling via nfkb` - this is similar to A2's `positive regulation of I-kappaB kinase/NF-kappaB signaling`.
+
+
+```{r}
+CONdownFilePath <- "~/projects/A3/figures/a2_conDownTopTerms.rds"
+a2_CONdownResults <- readRDS(CONdownFilePath)
+head(a2_CONdownResults)
+```
+
+
+**Table 6.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using downregulated genes only.
+
+
+
+When comparing this to what we found in our non-thresholded GSEA in **Fig. 7**, we can see that A2's results outlined in **Table 6** has more generic terms related to apoptosis. **Fig. 7** has more specific terms such as `Rho GTPases activate NADPH oxidases` and `Trna metabolic process`.
+
+
+While the results from the two different analyses are not the exact same, I do not think they are in disagreement as there are still a few similarities. These results also still align with experimental conditions. It is, however, important to note that this is NOT a straight forward comparison. Throughout this part of the assignment, we have only quantitatively compared and contrasted the top 5 terms of enriched gene sets. There might be other information that can affect our interpretation. Additionally, for the A2 results, we reduced our threshold to p-value \< 0.01 as there were many terms that passed the conventional p-value \< 0.05. This is unlike our non-thresholded GSEA in this assignment where we used the threshold FDR \< 0.05. We also only used the annotation data GO:BP (releases/2022-12-04), Reactome (releases/2022-12-28), and WikiPathways (releases/2022-12-10) for A2. These collections are only a few of what is used in the gene set from the Bader Lab.
 
 
 # Task 2: Visualize the GSEA in Cytoscape
