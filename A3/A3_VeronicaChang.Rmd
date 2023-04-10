@@ -1,7 +1,7 @@
 ---
 title: "BCB420 Assignment 3: Gene Set Enrichment and Network Analysis"
 author: "Veronica Chang"
-date: "April 7th, 2023"
+date: "April 9th, 2023"
 output:
   html_document:
     toc: true
@@ -22,16 +22,12 @@ Multiple sclerosis (MS) is a chronic neuroinflammatory autoimmune disease.
 MS is characterized by demyelination and subsequent formation of lesions through out the central nervous system (CNS).
 Grey matter (GM) and white matter (WM) lesions in the brain show pathological differences.
 Microglia are CNS-resident and can function as antigen-presenting cells and phagocytes.
-Their role in MS is complex and controversial [@luo2017]. In this paper by van der Poel et.
+Their role in MS is complex and controversial [@luo2017].
+In this paper by van der Poel et.
 al, titled "Transcriptional profiling of human microglia reveals grey-white matter heterogeneity and multiple sclerosis-associated changes", a total of 31 human microglia samples were analyzed from 10 MS donors (MS), including 5 grey matter (GM) and 10 white matter (WM) samples, and from 11 non-neurological control donors (CON), including 5 grey matter and 11 white matter samples.
 From each sample, the total RNA was extracted [@vanderPoel2019].
-
-## Objectives
-
-The authors isolated human microglia according to the previously described general experimental design.
-They suggest that pathological changes in MS tissue may be associated with changes in microglia, leading to lesion initiation.
-The authors wanted to analyze the transcriptional profile of microglia in the collected samples by RNA-sequencing [@vanderPoel2019].
-Ultimately, they wanted to discover MS-related changes in microglia between the GM and WM brain regions.
+In this study, they suggest that pathological changes in MS tissue may be associated with changes in microglia, leading to lesion initiation.
+Ultimately, they wanted to discover MS-related changes in microglia between the GM and WM brain regions by analysis of the transcriptional profile of microglia in the collected samples with RNA-sequencing.
 
 ## Summary of previous analysis
 
@@ -45,9 +41,9 @@ With an MDS plot, we saw that our samples clustered together by tissue, WM or GM
 knitr::include_graphics("~/projects/A3/figures/a1_mdsplot.png")
 ```
 
-**Figure 1.** MDS plot of all MS and CON patient samples. Samples clustered together by tissue regardless of patient group.
-
-
+**Figure 1.** MDS plot of all MS and CON patient samples.
+Samples clustered together by tissue regardless of patient group.
+Results were obtained from A1.
 
 In A2, we did differential expression analysis and preliminary over-representation analysis (ORA).
 In the ORA, with comparison of the two tissues, GM and WM - we found `3042` genes that were differentially expressed in `MS` patients, and `2901` genes that were differentially expressed in `CON` patients using the conventional p-value of 0.05.
@@ -59,9 +55,11 @@ knitr::include_graphics("~/projects/A3/figures/a2_heatmap.png")
 
 # Dependencies and data preparation
 
-
-**Figure 2.** Heat map of global gene expression across all samples.Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right. The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated. Values were converted from counts to CPM and scaled. The samples were also hierarchically clustered by their expression (dendrograms for both rows and columns were excluded to keep the figure neat).
-
+**Figure 2.** Heat map of global gene expression across all samples.Samples were annotated based on their patient group and tissue on top of each column, its legend is found on the right.
+The heat map was coloured based on expression of each gene, where red is up-regulated and blue is down-regulated.
+Values were converted from counts to CPM and scaled.
+The samples were also hierarchically clustered by their expression (dendrograms for both rows and columns were excluded to keep the figure neat).
+Results were obtained from A2.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 knitr::include_graphics("~/projects/A3/figures/a2_volcanoms.png")
@@ -70,7 +68,9 @@ knitr::include_graphics("~/projects/A3/figures/a2_volcanocon.png")
 
 **Figure 3.** Volcano plot of differentially expressed genes comparing **(A)** grey matter and white matter tissues in MS patients, and **(B)** grey matter and white matter tissues in CON patients.
 Differentially expressed genes are coloured based on whether they are up- or down-regulated.
-Genes were selected when FDR \< 0.05 AND logFC \> 0 for up-regulated OR logFC \< 0 for down-regulated. If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
+Genes were selected when FDR \< 0.05 AND logFC \> 0 for up-regulated OR logFC \< 0 for down-regulated.
+If they do not fulfill these requirements, they are labelled as not differentially expressed (DE).
+Results were obtained from A2.
 
 ## Packages
 
@@ -274,7 +274,7 @@ DT::datatable(MSupreg_table, rownames = FALSE, filter = "top",
 
 <br> **Table 1.** Enriched gene sets of the upregulated genes in GM vs WM in the MS patient group.
 
-Downregulated
+<br> <br> Downregulated
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Prepare for display
@@ -296,9 +296,10 @@ DT::datatable(MSnegreg_table, rownames = FALSE, filter = "top",
 
 <br> **Table 2.** Enriched gene sets of the downregulated genes in GM vs WM in the MS patient group.
 
-Notably, our GSEA analysis identified `r nrow(MSupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(MSupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
+<br> <br> Notably, our GSEA analysis identified `r nrow(MSupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(MSupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
 While there were `r nrow(MSnegreg_table)` gene sets enriched, and `` r sum(MSnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25) in the downregulated genes in GM vs WM in MS patients.
 
+<br>
 We can look at the top 5 gene sets over-represented at the top of the ranked gene list.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
@@ -328,6 +329,7 @@ ggplot(MSup_res[1:5,]) +
 **Figure 1.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes.
 Dots are are coloured by FDR and their size is determined by the size of the gene set.
 
+<br> <br> 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 MSneg_res <- data.frame(pathway = MSnegreg_table$`Gene Set`,
   size = MSnegreg_table$Size,
@@ -452,7 +454,7 @@ DT::datatable(CONupreg_table, rownames = FALSE, filter = "top",
 
 <br> **Table 3.** Enriched gene sets of the upregulated genes in GM vs WM in the CON patient group.
 
-Downregulated
+<br> <br> Downregulated
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 # Prepare for display
@@ -474,10 +476,10 @@ DT::datatable(CONnegreg_table, rownames = FALSE, filter = "top",
 
 <br> **Table 4.** Enriched gene sets of the downregulated genes in GM vs WM in the MS patient group.
 
-Our GSEA analysis identified `r nrow(CONupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(CONupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
+<br> <br> Our GSEA analysis identified `r nrow(CONupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(CONupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
 While there were `r nrow(CONnegreg_table)` gene sets enriched, and `` r sum(CONnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25) in the downregulated genes in GM vs WM in MS patients.
 
-We can look at the top 5 gene sets over-represented at the top of the ranked gene list.
+<br>We can look at the top 5 gene sets over-represented at the top of the ranked gene list.
 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 CONup_res <- data.frame(pathway = CONupreg_table$`Gene Set`,
@@ -505,7 +507,7 @@ ggplot(CONup_res[1:5,]) +
 
 **Figure 6.** Top 5 enriched gene sets identified by GSEA for the up-regulated genes.
 Dots are are coloured by FDR and their size is determined by the size of the gene set.
-
+<br> <br> 
 ```{r message = FALSE, tidy=TRUE, warning=FALSE}
 CONneg_res <- data.frame(pathway = CONnegreg_table$`Gene Set`,
   size = CONnegreg_table$Size,
@@ -548,9 +550,15 @@ In **Fig. 5**, a gene set that is particularly relevant to this data set is `Hal
 In A2, we found similar results with ORA and found that the NF-kB pathway is essential in the pathology of MS [@mcguire2013].
 It is interesting how this is downregulated in GM vs WM.
 
-We identified `r nrow(CONupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(CONupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25). For the downregulated genes, there were `r nrow(CONnegreg_table)` gene sets enriched, and `` r sum(CONnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25). Interestingly, our results for this analysis (**Fig. 6**) is similar to what is seen in **Fig. 5**, with `Hallmark tnfa signaling via nfkb` in particular. For the MS group, the ES is `-0.7880487` while in the CON group, the ES is `-0.80684453`. In **Fig. 7**, a gene set that is particularly relevant to this data set is `Particular importance of Trna metabolic process.`.
+<br>
+We identified `r nrow(CONupreg_table)` gene sets that were associated with the upregulated genes in GM vs WM in MS patients but `` r sum(CONupreg_table$`FDR q-value` < 0.25) `` were significantly enriched (FDR \< 0.25).
+For the downregulated genes, there were `r nrow(CONnegreg_table)` gene sets enriched, and `` r sum(CONnegreg_table$`FDR q-value` < 0.25) `` of these gene sets were significant (FDR \< 0.25).
+Interestingly, our results for this analysis (**Fig. 6**) is similar to what is seen in **Fig. 5**, with `Hallmark tnfa signaling via nfkb` in particular.
+For the MS group, the ES is `-0.7880487` while in the CON group, the ES is `-0.80684453`.
+In **Fig. 7**, a gene set that is particularly relevant to this data set is `Particular importance of Trna metabolic process.`.
 
 ### 3. How do these results compare to the results from the thresholded analysis in Assignment #2. Compare qualitatively. Is this a straight forward comparison? Why or why not?
+
 In A2, we found:
 
 -   For the MS group:
@@ -561,13 +569,10 @@ a2_MSupResults <- readRDS(MSupFilePath)
 head(a2_MSupResults)
 ```
 
+**Table 5.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value \< 0.01) using upregulated genes only.
 
-**Table 3.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using upregulated genes only.
-
-
-
-When comparing this to what we found in our non-thresholded GSEA in **Fig.4**, we can see that A2's results outlined in **Table 3** has more immune mechanism-related terms concerning Toll-like receptors (TLRs). **Fig.4** seems to have more vague and generic terms.
-
+<br> <br> When comparing this to what we found in our non-thresholded GSEA in **Fig.4**, we can see that A2's results outlined in **Table 5** has more immune mechanism-related terms concerning Toll-like receptors (TLRs).
+**Fig.4** seems to have more vague and generic terms.
 
 ```{r}
 MSdownFilePath <- "~/projects/A3/figures/a2_msDownTopTerms.rds"
@@ -575,13 +580,10 @@ a2_MSdownResults <- readRDS(MSdownFilePath)
 head(a2_MSdownResults)
 ```
 
+**Table 6.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value \< 0.01) using downregulated genes only.
 
-**Table 4.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using downregulated genes only.
-
-
-
-When comparing this to what we found in our non-thresholded GSEA in **Fig.5**, we can see that A2's results outlined in **Table 4** has terms related to translation and protein processes. There are a few translation-related terms in **Fig. 5** but there is a particular gene set that stands out with the largest size out of the top 5: the previously mentioned `Hallmark tnfa signaling via nfkb`.
-
+<br> <br> When comparing this to what we found in our non-thresholded GSEA in **Fig.5**, we can see that A2's results outlined in **Table 6** has terms related to translation and protein processes.
+There are a few translation-related terms in **Fig. 5** but there is a particular gene set that stands out with the largest size out of the top 5: the previously mentioned `Hallmark tnfa signaling via nfkb`.
 
 -   For the CON group:
 
@@ -591,91 +593,170 @@ a2_CONupResults <- readRDS(CONupFilePath)
 head(a2_CONupResults)
 ```
 
+**Table 7.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value \< 0.01) using upregulated genes only.
 
-**Table 5.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using upregulated genes only.
-
-
-
-When comparing this to what we found in our non-thresholded GSEA in **Fig. 6**, we can see that A2's results outlined in **Table 5** has more immune mechanism-related terms such as regulation of response and myeloid leukocyte mediated immunity. Similar to what we found in A2, **Fig. 6** has the term `Hallmark tnfa signaling via nfkb` - this is similar to A2's `positive regulation of I-kappaB kinase/NF-kappaB signaling`.
-
-
+<br> <br> When comparing this to what we found in our non-thresholded GSEA in **Fig. 6**, we can see that A2's results outlined in **Table 7** has more immune mechanism-related terms such as regulation of response and myeloid leukocyte mediated immunity.
+Similar to what we found in A2, **Fig. 6** has the term `Hallmark tnfa signaling via nfkb` - this is similar to A2's `positive regulation of I-kappaB kinase/NF-kappaB signaling`.
+<br>
 ```{r}
 CONdownFilePath <- "~/projects/A3/figures/a2_conDownTopTerms.rds"
 a2_CONdownResults <- readRDS(CONdownFilePath)
 head(a2_CONdownResults)
 ```
 
+**Table 8.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value \< 0.01) using downregulated genes only.
 
-**Table 6.** Analysis from A2: Enriched gene sets from thresholded GSEA (p-value < 0.01) using downregulated genes only.
-
-
-
-When comparing this to what we found in our non-thresholded GSEA in **Fig. 7**, we can see that A2's results outlined in **Table 6** has more generic terms related to apoptosis. **Fig. 7** has more specific terms such as `Rho GTPases activate NADPH oxidases` and `Trna metabolic process`.
-
-
-While the results from the two different analyses are not the exact same, I do not think they are in disagreement as there are still a few similarities. These results also still align with experimental conditions. It is, however, important to note that this is NOT a straight forward comparison. Throughout this part of the assignment, we have only quantitatively compared and contrasted the top 5 terms of enriched gene sets. There might be other information that can affect our interpretation. Additionally, for the A2 results, we reduced our threshold to p-value \< 0.01 as there were many terms that passed the conventional p-value \< 0.05. This is unlike our non-thresholded GSEA in this assignment where we used the threshold FDR \< 0.05. We also only used the annotation data GO:BP (releases/2022-12-04), Reactome (releases/2022-12-28), and WikiPathways (releases/2022-12-10) for A2. These collections are only a few of what is used in the gene set from the Bader Lab.
-
+<br> <br> When comparing this to what we found in our non-thresholded GSEA in **Fig. 7**, we can see that A2's results outlined in **Table 8** has more generic terms related to apoptosis.
+**Fig. 7** has more specific terms such as `Rho GTPases activate NADPH oxidases` and `Trna metabolic process`.
+<br>
+While the results from the two different analyses are not the exact same, I do not think they are in disagreement as there are still a few similarities.
+These results also still align with experimental conditions.
+It is, however, important to note that this is NOT a straight forward comparison.
+Throughout this part of the assignment, we have only quantitatively compared and contrasted the top 5 terms of enriched gene sets.
+There might be other information that can affect our interpretation.
+Additionally, for the A2 results, we reduced our threshold to p-value \< 0.01 as there were many terms that passed the conventional p-value \< 0.05.
+This is unlike our non-thresholded GSEA in this assignment where we used the threshold FDR \< 0.05.
+We also only used the annotation data <GO:BP> (releases/2022-12-04), Reactome (releases/2022-12-28), and WikiPathways (releases/2022-12-10) for A2.
+These collections are only a few of what is used in the gene set from the Bader Lab.
 
 # Task 2: Visualize the GSEA in Cytoscape
+
 ## Enrichment map construction
-We have attempted to run EnrichmentMap from within R but ran into issues. Instead, we used the EnrichmentMap (3.3.5) app [@merico2010] in the [Cytoscape 3.9.1](https://cytoscape.org/) software [@shannon2003]. The EnrichmentMap app needs to be installed separately. The default parameters were used and edge cutoff was set to 0.375 with the Jaccard + Overlap combined metric.
+
+We have attempted to run EnrichmentMap from within R but ran into issues.
+Instead, we used the EnrichmentMap (3.3.5) app [@merico2010] in the [Cytoscape 3.9.1](https://cytoscape.org/) software [@shannon2003].
+The EnrichmentMap app needs to be installed separately.
+The default parameters were used and edge cutoff was set to 0.375 with the Jaccard + Overlap combined metric.
 
 ```{r}
 knitr::include_graphics("~/projects/A3/figures/MS_network.png")
 knitr::include_graphics("~/projects/A3/figures/CON_network.png")
 ```
 
+**Figure 8.** (**A**) Enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Enrichment map of the dysregulated gene sets and pathways in CON patients.
+Both are prior to manual layout.
+Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively.
+Node sizes correspond to gene set size.
+Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
 
-**Figure 8.** (**A**) Enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Enrichment map of the dysregulated gene sets and pathways in CON patients. Both are prior to manual layout. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
-
-
-
+<br> <br> At this point of analysis, there are `1061` nodes and `3314` edges for the MS group and `1360` nodes and `4656` edges for the CON group.
 
 ## Network annotation
-The networks made in **Fig. 8** alone are not enough to interpret and infer the biological themes of these gene sets. We then applied the AutoAnnotate app (1.4.0) [@autoannotate] in Cytoscape [@shannon2003] to annotate the Enrichment Map. We manually eliminated clusters and nodes to make it more readable. The MCL (Markov Cluster) clustering algorithm was used to annotate the common labels of nodes. It is efficient and effective at detecting clusters in large networks. We used the default parameters: max word per label leaving = 3, minimum word occurrence = 1.
+
+The networks made in **Fig. 8** alone are not enough to interpret and infer the biological themes of these gene sets.
+We then applied the AutoAnnotate app (1.4.0) [@autoannotate] in Cytoscape [@shannon2003] to annotate the Enrichment Map.
+We manually eliminated clusters and nodes to make it more readable.
+The MCL (Markov Cluster) clustering algorithm was used to annotate the common labels of nodes.
+It is efficient and effective at detecting clusters in large networks.
+We used the default parameters: max word per label leaving = 3, minimum word occurrence = 1.
 
 ```{r}
 knitr::include_graphics("~/projects/A3/figures/annoMS_network.png")
 knitr::include_graphics("~/projects/A3/figures/annoCON_network.png")
 ```
 
+**Figure 9.** (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients.
+Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively.
+Node sizes correspond to gene set size.
+Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
+The size of annotation text corresponds to the number of gene sets in the annotation.
 
-**Figure 9.** (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation.
-
-
-To produce a publication-ready figure, we excluded some themes that were irrelevant - too generic, little/no edges between nodes. 
-
+<br> <br> To produce a **publication-ready figure**, we excluded some themes that were irrelevant - too generic, little/no edges between nodes.
+<br>
 ```{r}
 knitr::include_graphics("~/projects/A3/figures/pubReadyAnno_network.png")
 ```
 
+**Figure 10.** Enrichment Map created with the EnrichmentMap (3.3.5) app in Cytoscape 3.9.1.
+Network was created with parameters FDR Q-value threshold \< 0.01 and combined similarity cutoff \> 0.375.
+Annotations were made with the AutoAnnotate app (1.4.0).
+Themes with little/no edges and generic terms were removed.
+(**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients.
+Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively.
+Node sizes correspond to gene set size.
+Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
+The size of annotation text corresponds to the number of gene sets in the annotation.
 
-**Figure 10.** Enrichment Map created with the EnrichmentMap (3.3.5) app in Cytoscape 3.9.1. Network was created with parameters FDR Q-value threshold < 0.01 and combined similarity cutoff > 0.375. Annotations were made with the AutoAnnotate app (1.4.0). Themes with little/no edges and generic terms were removed. (**A**) Annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Annotated enrichment map of the dysregulated gene sets and pathways in CON patients. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation.
-
-
+<br> <br> At this point of analysis, there are `282` nodes and `2214` edges for the MS group and `125` nodes and `80` edges for the CON group.
 
 ## Collapse to a theme network
-**Fig. 9** gives us a better idea of the biological themes of our gene sets. To better visualize these relationships, we further collapsed the clusters into single nodes by selecting the `Collapse all` option in the AutoAnnotate menu and used the `CoSE (Compound Spring Embedder)` algorithm.
 
+**Fig. 9** gives us a better idea of the biological themes of our gene sets.
+To better visualize these relationships, we further collapsed the clusters into single nodes by selecting the `Collapse all` option in the AutoAnnotate menu and used the `CoSE (Compound Spring Embedder)` algorithm for layout.
 
 ```{r}
 knitr::include_graphics("~/projects/A3/figures/collapseAnnoMS_network.png")
 knitr::include_graphics("~/projects/A3/figures/collapseAnnoCON_network.png")
 ```
 
+**Figure 11.** (**A**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in CON patients.
+CoSE cluster layout was used.
+Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively.
+Node sizes correspond to gene set size.
+Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
+The size of annotation text corresponds to the number of gene sets in the annotation.
 
-**Figure 11.** (**A**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in CON patients. CoSE cluster layout was used. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation. 
-
-
-**Fig. 11** still seems to be a bit "busy". We excluded some of the smaller individual nodes for both networks.
-
+<br> <br> **Fig. 11** still seems to be a bit "busy".
+We excluded some of the smaller individual nodes for both networks.
 
 ```{r}
 knitr::include_graphics("~/projects/A3/figures/legendExcludedNetworks.png")
 ```
 
-
-**Figure 12.** (**A**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in CON patients. CoSE cluster layout was used. Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively. Node sizes correspond to gene set size. Edges represent overlap between nodes and the edge width represents the number of genes that overlap. The size of annotation text corresponds to the number of gene sets in the annotation. Smaller nodes from **Fig. 11** were excluded to produce these figures.
-
+**Figure 12.** (**A**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in MS patients, (**B**) Collapsed annotated enrichment map of the dysregulated gene sets and pathways in CON patients.
+CoSE cluster layout was used.
+Each node is a gene set/pathway and is coloured either red or blue to indicated whether it is up- or down-regulated respectively.
+Node sizes correspond to gene set size.
+Edges represent overlap between nodes and the edge width represents the number of genes that overlap.
+The size of annotation text corresponds to the number of gene sets in the annotation.
+Smaller nodes from **Fig. 11** were excluded to produce these figures.
 
 # Task 3: Interpretation and detailed view of results
+
+## 1. Do the enrichment results support conclusions or mechanism discussed in the original paper? How do these results differ from the results you got from Assignment #2 thresholded methods
+
+The enrichment results do provide support for the conclusions and discussions presented in the original paper [@vanderPoel2019].
+There is a lot of overlap between the MS and the CON patients - we can see that the top 5 enriched gene sets we generated with non-threshold GSEA were the same between the downregulated genes in GM vs WM of MS patients (**Fig. 5**) and the upregulated genes in GM vs WM of CON patients (**Fig. 6**).
+As we did in A2, we found a significant gene set, `Hallmark tnfa signaling via nfkb`.
+In A2, we found similar results with ORA and found that the NF-kB pathway is essential in the pathology of MS [@mcguire2013].
+This is also highlighted in the original paper where there was higher expression of genes in the NF-kB pathway that were found in the WM in both MS and CON patient groups.
+
+
+Additionally, as we can see in **Fig. 10 (A)**, many of the gene sets were no longer enriched in the MS group while **Fig. 10 (B)** shows that the CON group still shows signatures of up- and downregulated gene sets.
+The original paper also came to similar conclusions where the number of DE genes between the GM and WM were lower in the MS group than the CON group.
+Their finding suggests that microglia in the MS may have lost their region-specific profile.
+A few other results from **Fig. 10** shows that the CON group had a theme in `foam lipid storage`.
+The van Poel et al. also reported DE genes that are involved in lipid metabolism and foam cell formation.
+In our analysis, we also found that the term `regulation of type I interferon-mediated signaling pathway` was significant in the upregulated genes of the MS group (**Fig. 1**) - this was mentioned in the original paper and supports our results.
+
+
+Our GSEA findings are quite consistent with our ORA results from A2.
+However, there were more themes found in this assignment that were more relevant to the conclusions drawn in the original paper as discussed earlier.
+In our ORA in A2, we did not find terms related to lipid metabolism or type I IFN pathways.
+
+## 2. Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your result?
+
+As we mentioned earlier where we found that the term `regulation of type I interferon-mediated signaling pathway` was significant in the upregulated genes of the MS group (**Fig. 1**).
+This was mentioned in the original paper, referencing another study that was done on the region-specific profile of microglia [@grabert2016] where they found the same results.
+In a paper by Zrzavy et al. (2017), they found similar results where there was a loss of homeostatic microglia signature and patterns in active MS [@zrzavy2017].
+This reflects our results where there was a loss of enriched gene sets/pathways in **Fig. 10**.
+
+## 3. Post analysis
+
+It has been shown that the development of microglia is largely relies on the transcription factors IRF8 and PU.1 [@yeh2019].
+We are now interested in adding these transcription factors to our main network to see their role in in our gene sets.
+We used the newest signature gene set of Transcription Factors from the Bader Lab geneset collection with a two-sided Mann-Whitney test and threshold p-value of 0.05.
+We were unable to find a gene set with IRF8 after gene set similarity was computed but still conducted the analysis with PU.1.
+Unfortunately, there were none that passed the cut-off.
+We tried again with overlap tests but none passed either.
+
+
+This was a bit disappointing as it would have been interesting to see how these transcription factors would have played a role in our network.
+PU.1 in particular is heavily involved in regulating several microglial functions.
+PU.1 is continuously expressed throughout microglia development and therefore shows a necessity of PU.1 for functional maintenance.
+Changes in the PU.1 expression level can lead to differences in microglial morphology and function [@kierdorf2013]. *In vitro* and *in vivo* studies have shown that PU.1 is a master regulator in the development and maintenance of microglia homeostatic function.
+As the original paper draws conclusions from microglial changes due to MS pathology.
+Additionally, IRF8 plays a significant role in regulating the early maturation of microglial precursors and regulates the survival of microglia.
+IRF8 is also a heterodimeric partner of PU.1 [@yeh2019].
+
+# References
